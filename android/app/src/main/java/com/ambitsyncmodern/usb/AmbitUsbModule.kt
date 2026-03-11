@@ -213,6 +213,74 @@ class AmbitUsbModule(private val reactContext: ReactApplicationContext) :
         }
     }
 
+    // ─── shareFile() ──────────────────────────────────────────────────────────
+    // Partage un fichier local vers d'autres apps via le share sheet Android.
+    // Utilise FileProvider pour générer une URI content:// (requis Android 7+).
+    @ReactMethod
+    fun shareFile(filePath: String, mimeType: String, promise: Promise) {
+        try {
+            val file = java.io.File(filePath)
+            if (!file.exists()) {
+                promise.reject("FILE_NOT_FOUND", "Fichier introuvable : $filePath")
+                return
+            }
+            val uri = androidx.core.content.FileProvider.getUriForFile(
+                reactApplicationContext,
+                "${reactApplicationContext.packageName}.fileprovider",
+                file
+            )
+            val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                type = mimeType
+                putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            val chooser = android.content.Intent.createChooser(intent, "Partager GPX")
+            chooser.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            reactApplicationContext.startActivity(chooser)
+            promise.resolve(null)
+        } catch (e: Exception) {
+            promise.reject("SHARE_ERROR", e.message ?: "Erreur inconnue")
+        }
+    }
+
+    // ─── saveToDownloads() ────────────────────────────────────────────────────
+    // Copie le fichier dans le dossier Téléchargements du téléphone.
+    // API 29+ : MediaStore (aucune permission requise).
+    // API 28  : copie directe (WRITE_EXTERNAL_STORAGE requis).
+    @ReactMethod
+    fun saveToDownloads(filePath: String, fileName: String, mimeType: String, promise: Promise) {
+        try {
+            val file = java.io.File(filePath)
+            if (!file.exists()) {
+                promise.reject("FILE_NOT_FOUND", "Fichier introuvable : $filePath")
+                return
+            }
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                val values = android.content.ContentValues().apply {
+                    put(android.provider.MediaStore.Downloads.DISPLAY_NAME, fileName)
+                    put(android.provider.MediaStore.Downloads.MIME_TYPE, mimeType)
+                    put(android.provider.MediaStore.Downloads.IS_PENDING, 1)
+                }
+                val resolver = reactApplicationContext.contentResolver
+                val uri = resolver.insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                    ?: throw Exception("Impossible de créer l'entrée MediaStore")
+                resolver.openOutputStream(uri)?.use { os -> file.inputStream().copyTo(os) }
+                values.clear()
+                values.put(android.provider.MediaStore.Downloads.IS_PENDING, 0)
+                resolver.update(uri, values, null, null)
+            } else {
+                val downloadsDir = android.os.Environment.getExternalStoragePublicDirectory(
+                    android.os.Environment.DIRECTORY_DOWNLOADS
+                )
+                downloadsDir.mkdirs()
+                file.copyTo(java.io.File(downloadsDir, fileName), overwrite = true)
+            }
+            promise.resolve(null)
+        } catch (e: Exception) {
+            promise.reject("SAVE_ERROR", e.message ?: "Erreur inconnue")
+        }
+    }
+
     // ─── disconnect() ─────────────────────────────────────────────────────────
     @ReactMethod
     fun disconnect(promise: Promise) {

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, Share } from 'react-native';
+import { shareFile, saveToDownloads } from '../native/AmbitUsbModule';
 import { WebView } from 'react-native-webview';
-import { exportToVikazimut, shareVikazimutFile } from '../services/VikazimutExport';
 import { uploadGpxToLivelox, isAuthenticated, getAuthorizationUrl } from '../services/ApiLivelox';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { RootStackParamList } from '../../App';
@@ -80,19 +80,6 @@ export default function MapScreen() {
 
   const leafletHtml = useMemo(() => buildLeafletHtml(coords), [coords]);
 
-  async function handleExportVikazimut() {
-    setExporting(true);
-    setShowExportMenu(false);
-    try {
-      const path = await exportToVikazimut(points, activity.id, activity.date);
-      await shareVikazimutFile(path);
-    } catch (e: any) {
-      Alert.alert('Erreur', 'Export Vikazimut échoué\n' + e?.message);
-    } finally {
-      setExporting(false);
-    }
-  }
-
   async function handleExportLivelox() {
     setShowExportMenu(false);
     const auth = await isAuthenticated();
@@ -123,7 +110,22 @@ export default function MapScreen() {
 
   async function handleShareGpx() {
     setShowExportMenu(false);
-    await Share.share({ url: `file://${activity.gpx_path}`, title: 'Partager GPX' });
+    try {
+      await shareFile(activity.gpx_path);
+    } catch (e: any) {
+      Alert.alert('Erreur', 'Impossible de partager le fichier\n' + e?.message);
+    }
+  }
+
+  async function handleSaveToDownloads() {
+    setShowExportMenu(false);
+    try {
+      const fileName = activity.gpx_path.split('/').pop() ?? `${activity.id}.gpx`;
+      await saveToDownloads(activity.gpx_path, fileName);
+      Alert.alert('Enregistré', `Fichier copié dans Téléchargements :\n${fileName}`);
+    } catch (e: any) {
+      Alert.alert('Erreur', 'Impossible d\'enregistrer\n' + e?.message);
+    }
   }
 
   if (loading) {
@@ -175,9 +177,9 @@ export default function MapScreen() {
       {/* ── Menu d'export ── */}
       {showExportMenu && (
         <View style={styles.exportMenu}>
-          <ExportMenuItem label="📤 Partager GPX"     onPress={handleShareGpx} />
-          <ExportMenuItem label="🗺 Export Vikazimut"  onPress={handleExportVikazimut} />
-          <ExportMenuItem label="🔴 Upload Livelox"   onPress={handleExportLivelox} />
+          <ExportMenuItem label="📤 Partager GPX"          onPress={handleShareGpx} />
+          <ExportMenuItem label="💾 Enregistrer (Téléchargements)" onPress={handleSaveToDownloads} />
+          <ExportMenuItem label="🔴 Upload Livelox"         onPress={handleExportLivelox} />
         </View>
       )}
 

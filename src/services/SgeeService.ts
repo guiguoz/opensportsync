@@ -36,7 +36,7 @@ export async function downloadSgee(
     fromUrl: SGEE_URL,
     toFile: SGEE_LOCAL_PATH,
     headers: {
-      'User-Agent': 'AmbitSyncModern/1.0',
+      'User-Agent': 'OpenSportsSync/1.0',
       'Accept': 'application/octet-stream',
     },
     progress: onProgress

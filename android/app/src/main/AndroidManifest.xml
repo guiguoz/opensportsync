@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Écriture dans Téléchargements — uniquement nécessaire sur Android 9 (API 28) -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
 
     <!-- USB OTG host mode requis pour communiquer avec la montre -->
     <uses-feature android:name="android.hardware.usb.host" />
@@ -33,5 +36,16 @@
             android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
             android:resource="@xml/device_filter" />
       </activity>
+
+      <!-- FileProvider pour partager les fichiers GPX vers d'autres apps (Android 7+) -->
+      <provider
+          android:name="androidx.core.content.FileProvider"
+          android:authorities="${applicationId}.fileprovider"
+          android:exported="false"
+          android:grantUriPermissions="true">
+          <meta-data
+              android:name="android.support.FILE_PROVIDER_PATHS"
+              android:resource="@xml/file_paths" />
+      </provider>
     </application>
 </manifest>

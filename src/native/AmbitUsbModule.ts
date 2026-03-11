@@ -54,3 +54,11 @@ export const getLogs    = (knownIds?: string[]) => ambitConnector.getLogs(knownI
 export const updateSgee = (path: string) => ambitConnector.updateSgee!(path);
 export const onSyncProgress = (cb: (e: SyncProgressEvent) => void) =>
   ambitConnector.onSyncProgress(cb);
+
+export function shareFile(filePath: string, mimeType = 'application/gpx+xml'): Promise<void> {
+  return NativeAmbit.shareFile(filePath, mimeType);
+}
+
+export function saveToDownloads(filePath: string, fileName: string, mimeType = 'application/gpx+xml'): Promise<void> {
+  return NativeAmbit.saveToDownloads(filePath, fileName, mimeType);
+}

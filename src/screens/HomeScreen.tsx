@@ -8,7 +8,6 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { runSync, SyncState } from '../services/SyncService';
 import { connect, disconnect } from '../native/AmbitUsbModule';
-import { updateWatchSgee } from '../services/SgeeService';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -27,23 +26,6 @@ export default function HomeScreen() {
   }
 
   const isBusy = sync.phase !== 'idle' && sync.phase !== 'done' && sync.phase !== 'error';
-  const [sgeeUpdating, setSgeeUpdating] = useState(false);
-
-  async function handleUpdateSgee() {
-    setSgeeUpdating(true);
-    try {
-      await connect();
-      await updateWatchSgee(false);
-      await disconnect().catch(() => {});
-      Alert.alert('SGEE', 'Éphémérides GPS mises à jour avec succès.');
-    } catch (e: any) {
-      await disconnect().catch(() => {});
-      Alert.alert('Erreur SGEE', e?.message ?? 'Mise à jour échouée');
-    } finally {
-      setSgeeUpdating(false);
-    }
-  }
-
   return (
     <View style={styles.container}>
       {/* Logo / titre */}
@@ -89,17 +71,6 @@ export default function HomeScreen() {
         <Text style={styles.btnText}>Voir les activités</Text>
       </TouchableOpacity>
 
-      {/* Bouton SGEE */}
-      <TouchableOpacity
-        style={[styles.btn, styles.btnTertiary, (isBusy || sgeeUpdating) && styles.btnDisabled]}
-        onPress={handleUpdateSgee}
-        disabled={isBusy || sgeeUpdating}
-      >
-        {sgeeUpdating
-          ? <ActivityIndicator color="#fff" />
-          : <Text style={styles.btnText}>Mettre à jour les éphémérides GPS</Text>
-        }
-      </TouchableOpacity>
     </View>
   );
 }
