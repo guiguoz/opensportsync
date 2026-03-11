@@ -85,6 +85,9 @@ preview.html
 android/app/src/main/res/drawable-*/
 android/app/src/main/res/raw/
 
+# Secrets (credentials API — ne jamais committer)
+src/config/secrets.ts
+
 # Yarn
 .yarn/*
 !.yarn/patches

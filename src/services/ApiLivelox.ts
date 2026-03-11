@@ -2,10 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import RNFS from 'react-native-fs';
 
 // ─── Configuration OAuth2 Livelox ─────────────────────────────────────────────
-// Créer une app sur https://api.livelox.com/developer
-// et renseigner les valeurs ci-dessous.
-const LIVELOX_CLIENT_ID     = 'VOTRE_CLIENT_ID';
-const LIVELOX_CLIENT_SECRET = 'VOTRE_CLIENT_SECRET';
+// Renseigner les credentials dans src/config/secrets.ts (gitignore).
+import { LIVELOX_CLIENT_ID, LIVELOX_CLIENT_SECRET } from '../config/secrets';
 const LIVELOX_REDIRECT_URI  = 'ambitsyncmodern://oauth/livelox';
 
 const LIVELOX_AUTH_URL  = 'https://api.livelox.com/auth/oauth2/authorize';
