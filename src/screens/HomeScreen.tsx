@@ -145,14 +145,23 @@ export default function HomeScreen() {
         </Text>
       </View>
 
-      {/* ── Bouton activités ── */}
-      <TouchableOpacity
-        style={styles.activitiesBtn}
-        onPress={() => navigation.navigate('LogList')}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.activitiesBtnText}>Voir les activités</Text>
-      </TouchableOpacity>
+      {/* ── Bas de page : activités + paramètres ── */}
+      <View style={styles.bottomRow}>
+        <TouchableOpacity
+          style={styles.activitiesBtn}
+          onPress={() => navigation.navigate('LogList')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.activitiesBtnText}>Voir les activités</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.settingsBtn}
+          onPress={() => navigation.navigate('Settings')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.settingsBtnText}>⚙</Text>
+        </TouchableOpacity>
+      </View>
 
     </View>
   );
@@ -268,8 +277,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 0.5,
   },
-  activitiesBtn: {
+  bottomRow: {
+    flexDirection: 'row',
     width: '100%',
+    gap: 10,
+    alignItems: 'center',
+  },
+  activitiesBtn: {
+    flex: 1,
     paddingVertical: 16,
     borderRadius: 14,
     borderWidth: 1,
@@ -282,6 +297,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     letterSpacing: 0.5,
+  },
+  settingsBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#1e3a5f',
+    backgroundColor: 'rgba(15,52,96,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingsBtnText: {
+    fontSize: 22,
+    color: '#00e5ff',
   },
   dot: {
     position: 'absolute',

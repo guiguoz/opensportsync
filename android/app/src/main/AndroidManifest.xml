@@ -32,6 +32,13 @@
         <intent-filter>
             <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
         </intent-filter>
+        <!-- Callback OAuth2 Livelox : opensportsync://oauth/livelox?code=... -->
+        <intent-filter android:label="OAuth Livelox">
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="opensportsync" android:host="oauth" android:pathPrefix="/livelox" />
+        </intent-filter>
         <meta-data
             android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
             android:resource="@xml/device_filter" />

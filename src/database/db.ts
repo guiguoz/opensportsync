@@ -34,20 +34,37 @@ async function getDb(): Promise<SQLiteDatabase> {
       activity_type TEXT    NOT NULL DEFAULT ''
     )
   `);
-  // Migration : ajouter activity_type si absent (activités déjà en DB)
+  // Table liste noire : activités supprimées volontairement, ne jamais re-importer
+  await _db.executeSql(`
+    CREATE TABLE IF NOT EXISTS deleted_activities (
+      id         TEXT    PRIMARY KEY,
+      deleted_at INTEGER NOT NULL
+    )
+  `);
+  // Migrations
   await _db.executeSql(
     `ALTER TABLE activities ADD COLUMN activity_type TEXT NOT NULL DEFAULT ''`
-  ).catch(() => {}); // ignore l'erreur si la colonne existe déjà
+  ).catch(() => {});
   return _db;
 }
 
 // ─── API publique ─────────────────────────────────────────────────────────────
 
-/** Vérifie si un log (identifié par son ID libambit) a déjà été synchronisé. */
+/** Vérifie si un log a déjà été synchronisé ET n'est pas dans la liste noire. */
 export async function isActivitySynced(id: string): Promise<boolean> {
   const db = await getDb();
+  const [[synced], [deleted]] = await Promise.all([
+    db.executeSql('SELECT 1 FROM activities WHERE id = ? LIMIT 1', [id]),
+    db.executeSql('SELECT 1 FROM deleted_activities WHERE id = ? LIMIT 1', [id]),
+  ]);
+  return synced.rows.length > 0 || deleted.rows.length > 0;
+}
+
+/** Vérifie si un ID est dans la liste noire (supprimé volontairement). */
+export async function isActivityDeleted(id: string): Promise<boolean> {
+  const db = await getDb();
   const [result] = await db.executeSql(
-    'SELECT 1 FROM activities WHERE id = ? LIMIT 1', [id]
+    'SELECT 1 FROM deleted_activities WHERE id = ? LIMIT 1', [id]
   );
   return result.rows.length > 0;
 }
@@ -85,14 +102,16 @@ export async function getAllActivities(): Promise<ActivityRecord[]> {
   return activities;
 }
 
-/** Retourne tous les IDs (format YYYYMMDDTHHMMSS) pour le skip_callback natif. */
+/** Retourne tous les IDs connus (synchro + liste noire) pour éviter re-import. */
 export async function getAllSyncedIds(): Promise<string[]> {
   const db = await getDb();
-  const [result] = await db.executeSql('SELECT id FROM activities');
+  const [[synced], [deleted]] = await Promise.all([
+    db.executeSql('SELECT id FROM activities'),
+    db.executeSql('SELECT id FROM deleted_activities'),
+  ]);
   const ids: string[] = [];
-  for (let i = 0; i < result.rows.length; i++) {
-    ids.push(result.rows.item(i).id);
-  }
+  for (let i = 0; i < synced.rows.length; i++) ids.push(synced.rows.item(i).id);
+  for (let i = 0; i < deleted.rows.length; i++) ids.push(deleted.rows.item(i).id);
   return ids;
 }
 
@@ -105,8 +124,12 @@ export async function updateActivityType(id: string, activityType: string): Prom
   );
 }
 
-/** Supprime une activité et son fichier GPX de la base. */
+/** Supprime une activité de la base et l'ajoute à la liste noire pour ne pas la re-importer. */
 export async function deleteActivity(id: string): Promise<void> {
   const db = await getDb();
   await db.executeSql('DELETE FROM activities WHERE id = ?', [id]);
+  await db.executeSql(
+    'INSERT OR IGNORE INTO deleted_activities (id, deleted_at) VALUES (?, ?)',
+    [id, Date.now()]
+  );
 }

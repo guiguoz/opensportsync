@@ -1,32 +1,39 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
-  StyleSheet, RefreshControl, Alert,
+  StyleSheet, RefreshControl, Alert, ScrollView,
 } from 'react-native';
 
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
-import { ActivityRecord, getAllActivities, markActivitySynced, deleteActivity, updateActivityType } from '../database/db';
+import {
+  ActivityRecord, getAllActivities, markActivitySynced,
+  deleteActivity, updateActivityType, isActivityDeleted,
+} from '../database/db';
 import { readGpxFile, listGpxFiles } from '../services/GpxService';
 import { extractGpxMetadata } from '../services/GpxParser';
 import RNFS from 'react-native-fs';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'LogList'>;
 
+const ALL = 'Toutes';
+
 export default function LogListScreen() {
   const navigation = useNavigation<Nav>();
   const [activities, setActivities] = useState<ActivityRecord[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<string>(ALL);
 
   const load = useCallback(async () => {
     try {
-      // 1. Reconstruire la DB depuis les fichiers GPX orphelins (DB vidée sans supprimer les GPX)
+      // 1. Reconstruire depuis GPX orphelins — en ignorant la liste noire
       const [gpxPaths, existing] = await Promise.all([listGpxFiles(), getAllActivities()]);
       const dbIds = new Set(existing.map(a => a.id));
       for (const path of gpxPaths) {
         const id = path.split('/').pop()?.replace('.gpx', '') ?? '';
         if (!id || dbIds.has(id)) continue;
+        if (await isActivityDeleted(id)) continue;   // ← liste noire
         try {
           const xml  = await readGpxFile(path);
           const meta = extractGpxMetadata(xml);
@@ -61,7 +68,6 @@ export default function LogListScreen() {
     }
   }, []);
 
-  // Recharger à chaque fois qu'on revient sur cet écran
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   async function handleRefresh() {
@@ -73,15 +79,14 @@ export default function LogListScreen() {
   function confirmDelete(item: ActivityRecord) {
     Alert.alert(
       'Supprimer',
-      `Supprimer l'activité du ${formatDate(item.date)} ?`,
+      `Supprimer l'activité du ${formatDate(item.date)} ?\n\nElle ne sera pas rechargée lors des prochaines synchronisations.`,
       [
         { text: 'Annuler', style: 'cancel' },
         {
           text: 'Supprimer',
           style: 'destructive',
           onPress: async () => {
-            await deleteActivity(item.id);
-            // Supprimer le fichier GPX si présent
+            await deleteActivity(item.id);           // ajoute à la liste noire
             if (item.gpx_path) {
               await RNFS.unlink(item.gpx_path).catch(() => {});
             }
@@ -91,6 +96,22 @@ export default function LogListScreen() {
       ]
     );
   }
+
+  // ─── Filtres ────────────────────────────────────────────────────────────────
+
+  const filterTypes = useMemo(() => {
+    const types = new Set(activities.map(a => a.activity_type).filter(Boolean));
+    return [ALL, ...Array.from(types).sort()];
+  }, [activities]);
+
+  const filtered = useMemo(
+    () => activeFilter === ALL
+      ? activities
+      : activities.filter(a => a.activity_type === activeFilter),
+    [activities, activeFilter]
+  );
+
+  // ─── Rendu ──────────────────────────────────────────────────────────────────
 
   if (activities.length === 0) {
     return (
@@ -103,72 +124,113 @@ export default function LogListScreen() {
   }
 
   return (
-    <FlatList
-      style={styles.list}
-      data={activities}
-      keyExtractor={item => item.id}
-      ListFooterComponent={
-        <Text style={styles.deleteHint}>Appui long sur une activité pour la supprimer</Text>
-      }
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#fff" />}
-      renderItem={({ item }) => (
-        <TouchableOpacity
-          style={styles.card}
-          onPress={() => navigation.navigate('Map', { activity: item })}
-          onLongPress={() => confirmDelete(item)}
-          activeOpacity={0.75}
+    <View style={styles.root}>
+      {/* Barre de filtres */}
+      {filterTypes.length > 2 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filterBar}
+          contentContainerStyle={styles.filterBarContent}
         >
-          <View style={styles.cardLeft}>
-            <Text style={styles.cardDate}>{formatDate(item.date)}</Text>
-            {!!item.activity_type && (
-              <Text style={styles.cardType}>{item.activity_type}</Text>
-            )}
-            <Text style={styles.cardSub}>{formatDuration(item.duration_s)} · {formatDist(item.distance_m)}</Text>
-          </View>
-          <View style={styles.cardRight}>
-            <Text style={styles.cardDPlus}>▲ {item.d_plus} m</Text>
-            <Text style={styles.cardArrow}>›</Text>
-          </View>
-        </TouchableOpacity>
+          {filterTypes.map(type => {
+            const active = activeFilter === type;
+            return (
+              <TouchableOpacity
+                key={type}
+                style={[styles.chip, active && styles.chipActive]}
+                onPress={() => setActiveFilter(type)}
+                activeOpacity={0.7}
+              >
+                {type !== ALL && (
+                  <Text style={styles.chipIcon}>{activityIcon(type)} </Text>
+                )}
+                <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                  {type === ALL ? type : capitalize(type)}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       )}
-    />
+
+      <FlatList
+        style={styles.list}
+        data={filtered}
+        keyExtractor={item => item.id}
+        ListEmptyComponent={
+          <View style={styles.emptyFilter}>
+            <Text style={styles.emptyFilterText}>Aucune activité pour ce filtre</Text>
+          </View>
+        }
+        ListFooterComponent={
+          <Text style={styles.deleteHint}>Appui long sur une activité pour la supprimer</Text>
+        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#fff" />}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => navigation.navigate('Map', { activity: item })}
+            onLongPress={() => confirmDelete(item)}
+            activeOpacity={0.75}
+          >
+            <View style={styles.cardLeft}>
+              <Text style={styles.cardDate}>{formatDate(item.date)}</Text>
+              {!!item.activity_type && (
+                <Text style={styles.cardType}>
+                  {activityIcon(item.activity_type)} {capitalize(item.activity_type)}
+                </Text>
+              )}
+              <Text style={styles.cardSub}>{formatDuration(item.duration_s)} · {formatDist(item.distance_m)}</Text>
+            </View>
+            <View style={styles.cardRight}>
+              <Text style={styles.cardDPlus}>▲ {item.d_plus} m</Text>
+              <Text style={styles.cardArrow}>›</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+      />
+    </View>
   );
 }
 
 // ─── Helpers d'affichage ──────────────────────────────────────────────────────
 
 const ACTIVITY_ICONS: Record<string, string> = {
-  // Français (SPORT_TYPE_MAP)
-  'orientation':        '🧭',
-  'course à pied':      '🏃',
-  'cyclisme':           '🚴',
-  'vtt':                '🚵',
-  'randonnée':          '🥾',
-  'marche':             '🚶',
-  'natation':           '🏊',
-  'trail':              '🏔',
-  'ski alpin':          '⛷',
-  'ski de fond':        '⛷',
-  'ski de randonnée':   '⛷',
-  'snowboard':          '🏂',
-  'patinage':           '⛸',
-  'patinage sur glace': '⛸',
-  'alpinisme':          '🧗',
-  // Anglais (activity_name brute si jamais peuplée)
-  'orienteering':       '🧭',
-  'running':            '🏃',
-  'cycling':            '🚴',
-  'mountain biking':    '🚵',
-  'trekking':           '🥾',
-  'hiking':             '🥾',
-  'swimming':           '🏊',
-  'trail running':      '🏔',
-  'skiing':             '⛷',
-  'cross country skiing':'⛷',
+  'orientation':          '🧭',
+  'course à pied':        '🏃',
+  'cyclisme':             '🚴',
+  'vtt':                  '🚵',
+  'randonnée':            '🥾',
+  'marche':               '🚶',
+  'natation':             '🏊',
+  'trail':                '🏔',
+  'ski alpin':            '⛷',
+  'ski de fond':          '⛷',
+  'ski de randonnée':     '⛷',
+  'snowboard':            '🏂',
+  'patinage':             '⛸',
+  'patinage sur glace':   '⛸',
+  'alpinisme':            '🧗',
+  'orienteering':         '🧭',
+  'running':              '🏃',
+  'cycling':              '🚴',
+  'mountain biking':      '🚵',
+  'trekking':             '🥾',
+  'hiking':               '🥾',
+  'swimming':             '🏊',
+  'trail running':        '🏔',
+  'skiing':               '⛷',
+  'cross country skiing': '⛷',
 };
 
 function activityIcon(type: string): string {
   return ACTIVITY_ICONS[type.toLowerCase()] ?? '🏅';
+}
+
+function capitalize(s: string): string {
+  if (!s) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 function formatDate(iso: string): string {
@@ -197,7 +259,27 @@ function formatDist(meters: number): string {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  list: { flex: 1, backgroundColor: '#16213e', padding: 12 },
+  root: { flex: 1, backgroundColor: '#16213e' },
+  list: { flex: 1, padding: 12 },
+  filterBar: { maxHeight: 52, backgroundColor: '#16213e' },
+  filterBarContent: { paddingHorizontal: 12, paddingVertical: 8, gap: 8 },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0f3460',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  chipActive: {
+    backgroundColor: '#00e5ff22',
+    borderColor: '#00e5ff',
+  },
+  chipIcon: { fontSize: 13 },
+  chipText: { fontSize: 13, color: '#8899aa', fontWeight: '500' },
+  chipTextActive: { color: '#00e5ff', fontWeight: '700' },
   empty: {
     flex: 1, alignItems: 'center', justifyContent: 'center',
     backgroundColor: '#16213e', padding: 32,
@@ -205,7 +287,9 @@ const styles = StyleSheet.create({
   emptyIcon: { fontSize: 48, marginBottom: 16 },
   emptyText: { fontSize: 18, color: '#fff', fontWeight: '600', marginBottom: 8 },
   emptyHint: { fontSize: 13, color: '#8899aa', textAlign: 'center' },
-  deleteHint: { fontSize: 11, color: '#555', textAlign: 'center', marginTop: 8 },
+  emptyFilter: { paddingVertical: 40, alignItems: 'center' },
+  emptyFilterText: { color: '#8899aa', fontSize: 14 },
+  deleteHint: { fontSize: 11, color: '#555', textAlign: 'center', marginTop: 8, marginBottom: 16 },
   card: {
     flexDirection: 'row',
     alignItems: 'center',

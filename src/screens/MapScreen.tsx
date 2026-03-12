@@ -1,15 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, Share } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, Linking } from 'react-native';
 import { shareFile, saveToDownloads } from '../native/AmbitUsbModule';
 import { WebView } from 'react-native-webview';
 import { uploadGpxToLivelox, isAuthenticated, getAuthorizationUrl } from '../services/ApiLivelox';
-import { RouteProp, useRoute } from '@react-navigation/native';
+import { getRunalyzeApiKey, uploadFitToRunalyze } from '../services/ApiRunalyze';
+import { generateFitFile } from '../services/FitExport';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { readGpxFile } from '../services/GpxService';
 import { parseTrackPoints, computeElevationStats, TrackPoint } from '../services/GpxParser';
 import ElevationChart from '../components/ElevationChart';
 
 type Route = RouteProp<RootStackParamList, 'Map'>;
+type Nav   = NativeStackNavigationProp<RootStackParamList, 'Map'>;
 
 // ─── Carte Leaflet (IGN, sans clé API) ────────────────────────────────────────
 
@@ -56,7 +60,8 @@ function buildLeafletHtml(coords: { lat: number; lng: number }[]): string {
 // ─── Composant ────────────────────────────────────────────────────────────────
 
 export default function MapScreen() {
-  const route = useRoute<Route>();
+  const route      = useRoute<Route>();
+  const navigation = useNavigation<Nav>();
   const { activity } = route.params;
 
   const [points, setPoints] = useState<TrackPoint[]>([]);
@@ -84,25 +89,59 @@ export default function MapScreen() {
     setShowExportMenu(false);
     const auth = await isAuthenticated();
     if (!auth) {
+      const url = await getAuthorizationUrl();
       Alert.alert(
-        'Livelox',
-        "Vous devez vous connecter à Livelox.\nOuvrez l'URL d'autorisation dans un navigateur.",
+        'Connexion Livelox',
+        'Vous allez être redirigé vers Livelox pour autoriser l\'accès. Revenez ensuite dans l\'app.',
         [
           { text: 'Annuler', style: 'cancel' },
-          { text: "Copier l'URL", onPress: () => Share.share({ message: getAuthorizationUrl() }) },
+          { text: 'Se connecter', onPress: () => Linking.openURL(url) },
         ]
       );
       return;
     }
     setExporting(true);
     try {
-      const dateStr = activity.date
-        ? new Date(activity.date).toLocaleDateString('fr-FR')
-        : 'Activité';
-      const result = await uploadGpxToLivelox(activity.gpx_path, `Ambit - ${dateStr}`);
-      Alert.alert('Livelox', `Uploadé !\n${result.eventUrl}`);
+      const result = await uploadGpxToLivelox(activity.gpx_path);
+      Alert.alert(
+        'Livelox',
+        `Activité importée !\n\n${result.viewerUrl}`,
+        [
+          { text: 'Fermer', style: 'cancel' },
+          { text: 'Voir sur Livelox', onPress: () => Linking.openURL(result.viewerUrl) },
+        ]
+      );
     } catch (e: any) {
       Alert.alert('Erreur Livelox', e?.message);
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function handleUploadRunalyze() {
+    setShowExportMenu(false);
+    const apiKey = await getRunalyzeApiKey();
+    if (!apiKey) {
+      Alert.alert(
+        'Clé API manquante',
+        'Configurez votre clé API Runalyze dans les Paramètres.',
+        [
+          { text: 'Annuler', style: 'cancel' },
+          { text: 'Paramètres', onPress: () => navigation.navigate('Settings') },
+        ]
+      );
+      return;
+    }
+    setExporting(true);
+    try {
+      const fitPath = await generateFitFile(activity.gpx_path, activity);
+      const result  = await uploadFitToRunalyze(fitPath, apiKey);
+      Alert.alert(
+        'Runalyze ✓',
+        `Activité importée ! (ID : ${result.activityId})\n\nPour l'envoyer vers Suunto : runalyze.com → activité → Partager → Suunto`,
+      );
+    } catch (e: any) {
+      Alert.alert('Erreur Runalyze', e?.message);
     } finally {
       setExporting(false);
     }
@@ -177,9 +216,10 @@ export default function MapScreen() {
       {/* ── Menu d'export ── */}
       {showExportMenu && (
         <View style={styles.exportMenu}>
-          <ExportMenuItem label="📤 Partager GPX"          onPress={handleShareGpx} />
-          <ExportMenuItem label="💾 Enregistrer (Téléchargements)" onPress={handleSaveToDownloads} />
-          <ExportMenuItem label="🔴 Upload Livelox"         onPress={handleExportLivelox} />
+          <ExportMenuItem label="📤 Partager GPX"                    onPress={handleShareGpx} />
+          <ExportMenuItem label="💾 Enregistrer (Téléchargements)"   onPress={handleSaveToDownloads} />
+          <ExportMenuItem label="📊 Upload Runalyze"                 onPress={handleUploadRunalyze} />
+          <ExportMenuItem label="🔴 Upload Livelox"                  onPress={handleExportLivelox} />
         </View>
       )}
 
