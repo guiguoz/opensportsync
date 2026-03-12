@@ -1,5 +1,5 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import RNFS from 'react-native-fs';
+import * as Keychain from 'react-native-keychain';
 
 // ─── Configuration OAuth2 Livelox ─────────────────────────────────────────────
 import { LIVELOX_CLIENT_ID } from '../config/secrets';
@@ -9,8 +9,8 @@ const LIVELOX_AUTH_URL     = 'https://api.livelox.com/oauth2/authorize';
 const LIVELOX_TOKEN_URL    = 'https://api.livelox.com/oauth2/token';
 const LIVELOX_API_BASE     = 'https://api.livelox.com';
 
-const STORAGE_TOKEN   = 'livelox_token';
-const STORAGE_PKCE    = 'livelox_pkce_verifier';
+const KC_TOKEN   = 'opensportsync_livelox_token';
+const KC_PKCE    = 'opensportsync_livelox_pkce';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -27,12 +27,12 @@ export interface LiveloxImportResult {
 // ─── Token storage ────────────────────────────────────────────────────────────
 
 async function saveToken(data: TokenData): Promise<void> {
-  await AsyncStorage.setItem(STORAGE_TOKEN, JSON.stringify(data));
+  await Keychain.setGenericPassword('livelox', JSON.stringify(data), { service: KC_TOKEN });
 }
 
 async function loadToken(): Promise<TokenData | null> {
-  const raw = await AsyncStorage.getItem(STORAGE_TOKEN);
-  return raw ? JSON.parse(raw) : null;
+  const creds = await Keychain.getGenericPassword({ service: KC_TOKEN });
+  return creds ? JSON.parse(creds.password) : null;
 }
 
 export async function isAuthenticated(): Promise<boolean> {
@@ -40,7 +40,10 @@ export async function isAuthenticated(): Promise<boolean> {
 }
 
 export async function logout(): Promise<void> {
-  await AsyncStorage.multiRemove([STORAGE_TOKEN, STORAGE_PKCE]);
+  await Promise.all([
+    Keychain.resetGenericPassword({ service: KC_TOKEN }),
+    Keychain.resetGenericPassword({ service: KC_PKCE }),
+  ]);
 }
 
 // ─── PKCE helpers ─────────────────────────────────────────────────────────────
@@ -54,24 +57,34 @@ function generateVerifier(): string {
   return v;
 }
 
-// ─── URL d'autorisation OAuth2 (PKCE plain) ───────────────────────────────────
+// ─── PKCE S256 ────────────────────────────────────────────────────────────────
+
+async function sha256Base64Url(input: string): Promise<string> {
+  const data = new TextEncoder().encode(input);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return btoa(String.fromCharCode(...new Uint8Array(hash)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+// ─── URL d'autorisation OAuth2 (PKCE S256) ────────────────────────────────────
 
 /**
- * Génère l'URL d'autorisation Livelox et stocke le code_verifier PKCE.
+ * Génère l'URL d'autorisation Livelox et stocke le code_verifier PKCE (Keychain).
  * Ouvrir cette URL dans le navigateur système (Linking.openURL).
  * L'app recevra le callback via le deep link opensportsync://oauth/livelox?code=...
  */
 export async function getAuthorizationUrl(): Promise<string> {
-  const verifier = generateVerifier();
-  await AsyncStorage.setItem(STORAGE_PKCE, verifier);
+  const verifier  = generateVerifier();
+  const challenge = await sha256Base64Url(verifier);
+  await Keychain.setGenericPassword('pkce', verifier, { service: KC_PKCE });
 
   const params = new URLSearchParams({
     response_type:         'code',
     client_id:             LIVELOX_CLIENT_ID,
     redirect_uri:          LIVELOX_REDIRECT_URI,
     scope:                 'routes.import',
-    code_challenge:        verifier,
-    code_challenge_method: 'plain',
+    code_challenge:        challenge,
+    code_challenge_method: 'S256',
   });
   return `${LIVELOX_AUTH_URL}?${params.toString()}`;
 }
@@ -82,7 +95,8 @@ export async function getAuthorizationUrl(): Promise<string> {
  * Appelé par App.tsx quand le deep link opensportsync://oauth/livelox?code=... est reçu.
  */
 export async function handleOAuthCallback(code: string): Promise<void> {
-  const verifier = await AsyncStorage.getItem(STORAGE_PKCE);
+  const creds = await Keychain.getGenericPassword({ service: KC_PKCE });
+  const verifier = creds ? creds.password : null;
   if (!verifier) throw new Error('PKCE verifier introuvable');
 
   const response = await fetch(LIVELOX_TOKEN_URL, {
@@ -97,7 +111,7 @@ export async function handleOAuthCallback(code: string): Promise<void> {
     }).toString(),
   });
 
-  await AsyncStorage.removeItem(STORAGE_PKCE);
+  await Keychain.resetGenericPassword({ service: KC_PKCE });
 
   if (!response.ok) {
     const body = await response.text();

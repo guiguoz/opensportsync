@@ -51,7 +51,7 @@ function buildVikazimutXml(
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <vikazimut version="1.0">
-  <track id="${escapeXml(activityId)}" date="${date}" source="AmbitSync">
+  <track id="${escapeXml(activityId)}" date="${escapeXml(date)}" source="AmbitSync">
     <points count="${points.length}">
 ${ptLines}
     </points>

@@ -1,19 +1,20 @@
 import RNFS from 'react-native-fs';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Keychain from 'react-native-keychain';
 
-const STORAGE_KEY = 'runalyze_api_key';
-const UPLOAD_URL  = 'https://runalyze.com/api/v1/activities/uploads';
+const KEYCHAIN_SERVICE = 'opensportsync_runalyze';
+const UPLOAD_URL       = 'https://runalyze.com/api/v1/activities/uploads';
 
 export async function getRunalyzeApiKey(): Promise<string | null> {
-  return AsyncStorage.getItem(STORAGE_KEY);
+  const creds = await Keychain.getGenericPassword({ service: KEYCHAIN_SERVICE });
+  return creds ? creds.password : null;
 }
 
 export async function saveRunalyzeApiKey(key: string): Promise<void> {
-  await AsyncStorage.setItem(STORAGE_KEY, key.trim());
+  await Keychain.setGenericPassword('runalyze', key.trim(), { service: KEYCHAIN_SERVICE });
 }
 
 export async function removeRunalyzeApiKey(): Promise<void> {
-  await AsyncStorage.removeItem(STORAGE_KEY);
+  await Keychain.resetGenericPassword({ service: KEYCHAIN_SERVICE });
 }
 
 export interface RunalyzeUploadResult {

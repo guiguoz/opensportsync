@@ -188,10 +188,10 @@ export default function MapScreen() {
       <WebView
         style={styles.map}
         source={{ html: leafletHtml }}
-        originWhitelist={['*']}
+        originWhitelist={['about:', 'data:']}
         javaScriptEnabled
-        domStorageEnabled
-        mixedContentMode="always"
+        domStorageEnabled={false}
+        mixedContentMode="never"
       />
 
       {/* ── Infos overlay ── */}
