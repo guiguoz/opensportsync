@@ -7,6 +7,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import {
   getRunalyzeApiKey, saveRunalyzeApiKey, removeRunalyzeApiKey,
 } from '../services/ApiRunalyze';
+import { t } from '../i18n';
 
 export default function SettingsScreen() {
   const [runalyzeKey, setRunalyzeKey]     = useState('');
@@ -22,14 +23,14 @@ export default function SettingsScreen() {
 
   async function handleSaveRunalyze() {
     if (!runalyzeKey.trim()) {
-      Alert.alert('Clé vide', 'Entrez votre clé API Runalyze.');
+      Alert.alert(t.emptyKey, t.emptyKeyMsg);
       return;
     }
     setSaving(true);
     try {
       await saveRunalyzeApiKey(runalyzeKey.trim());
       setSavedKey(runalyzeKey.trim());
-      Alert.alert('Enregistré', 'Clé API Runalyze sauvegardée.');
+      Alert.alert(t.savedOk, t.keySaved);
     } finally {
       setSaving(false);
     }
@@ -39,7 +40,7 @@ export default function SettingsScreen() {
     await removeRunalyzeApiKey();
     setSavedKey(null);
     setRunalyzeKey('');
-    Alert.alert('Supprimé', 'Clé API Runalyze supprimée.');
+    Alert.alert(t.deleted, t.keyDeleted);
   }
 
   return (
@@ -47,22 +48,19 @@ export default function SettingsScreen() {
 
       {/* ── Runalyze ── */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Runalyze</Text>
+        <Text style={styles.sectionTitle}>{t.runalyzeSection}</Text>
+        <Text style={styles.sectionDesc}>{t.runalyzeDesc}</Text>
         <Text style={styles.sectionDesc}>
-          Runalyze est une plateforme d'analyse d'entraînement open source et gratuite.
-          Vos activités GPX seront importées dans votre compte Runalyze.
-        </Text>
-        <Text style={styles.sectionDesc}>
-          Générez votre clé API sur{' '}
-          <Text style={styles.link}>runalyze.com → Account → API access</Text>
+          {t.runalyzeApiHint}
+          <Text style={styles.link}>{t.runalyzeApiLink}</Text>
         </Text>
 
-        <Text style={styles.label}>Clé API</Text>
+        <Text style={styles.label}>{t.apiKey}</Text>
         <TextInput
           style={styles.input}
           value={runalyzeKey}
           onChangeText={setRunalyzeKey}
-          placeholder="Collez votre clé API ici"
+          placeholder={t.apiKeyPlaceholder}
           placeholderTextColor="#4a5a7a"
           autoCapitalize="none"
           autoCorrect={false}
@@ -77,13 +75,13 @@ export default function SettingsScreen() {
           >
             {saving
               ? <ActivityIndicator size="small" color="#fff" />
-              : <Text style={styles.btnText}>Enregistrer</Text>
+              : <Text style={styles.btnText}>{t.saveBtn}</Text>
             }
           </TouchableOpacity>
 
           {savedKey && (
             <TouchableOpacity style={[styles.btn, styles.btnDanger]} onPress={handleRemoveRunalyze}>
-              <Text style={styles.btnText}>Supprimer</Text>
+              <Text style={styles.btnText}>{t.deleteBtn}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -91,7 +89,7 @@ export default function SettingsScreen() {
         {savedKey && (
           <View style={styles.statusRow}>
             <View style={styles.dot} />
-            <Text style={styles.statusText}>Clé enregistrée</Text>
+            <Text style={styles.statusText}>{t.keyStored}</Text>
           </View>
         )}
       </View>

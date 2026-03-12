@@ -10,6 +10,7 @@ import MapScreen from './src/screens/MapScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import { ActivityRecord } from './src/database/db';
 import { handleOAuthCallback } from './src/services/ApiLivelox';
+import { t, dateLocale } from './src/i18n';
 
 // ─── Types de navigation ──────────────────────────────────────────────────────
 
@@ -30,11 +31,11 @@ async function processOAuthUrl(url: string | null) {
   if (!url || !url.startsWith(OAUTH_PREFIX)) return;
   try {
     const code = new URL(url).searchParams.get('code');
-    if (!code) throw new Error('Code OAuth manquant dans le callback');
+    if (!code) throw new Error(t.oauthMissingCode);
     await handleOAuthCallback(code);
-    Alert.alert('Livelox', 'Connexion réussie ! Vous pouvez maintenant exporter vos activités.');
+    Alert.alert('Livelox', t.liveloxConnected);
   } catch (e: any) {
-    Alert.alert('Erreur Livelox', e?.message);
+    Alert.alert(t.liveloxError, e?.message);
   }
 }
 
@@ -70,21 +71,21 @@ export default function App() {
           <Stack.Screen
             name="LogList"
             component={LogListScreen}
-            options={{ title: 'Activités' }}
+            options={{ title: t.logListTitle }}
           />
           <Stack.Screen
             name="Map"
             component={MapScreen}
             options={({ route }) => ({
               title: route.params.activity.date
-                ? new Date(route.params.activity.date).toLocaleDateString('fr-FR')
-                : 'Parcours',
+                ? new Date(route.params.activity.date).toLocaleDateString(dateLocale)
+                : t.mapFallback,
             })}
           />
           <Stack.Screen
             name="Settings"
             component={SettingsScreen}
-            options={{ title: 'Paramètres' }}
+            options={{ title: t.settingsTitle }}
           />
         </Stack.Navigator>
       </NavigationContainer>

@@ -14,10 +14,11 @@ import {
 import { readGpxFile, listGpxFiles } from '../services/GpxService';
 import { extractGpxMetadata } from '../services/GpxParser';
 import RNFS from 'react-native-fs';
+import { t, dateLocale } from '../i18n';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'LogList'>;
 
-const ALL = 'Toutes';
+const ALL = t.all;
 
 export default function LogListScreen() {
   const navigation = useNavigation<Nav>();
@@ -64,7 +65,7 @@ export default function LogListScreen() {
       }
       setActivities([...data]);
     } catch (e) {
-      Alert.alert('Erreur chargement', String(e));
+      Alert.alert(t.loadError, String(e));
     }
   }, []);
 
@@ -78,12 +79,12 @@ export default function LogListScreen() {
 
   function confirmDelete(item: ActivityRecord) {
     Alert.alert(
-      'Supprimer',
-      `Supprimer l'activité du ${formatDate(item.date)} ?\n\nElle ne sera pas rechargée lors des prochaines synchronisations.`,
+      t.deleteTitle,
+      t.deleteMsg(formatDate(item.date)),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t.cancel, style: 'cancel' },
         {
-          text: 'Supprimer',
+          text: t.delete,
           style: 'destructive',
           onPress: async () => {
             await deleteActivity(item.id);           // ajoute à la liste noire
@@ -117,8 +118,8 @@ export default function LogListScreen() {
     return (
       <View style={styles.empty}>
         <Text style={styles.emptyIcon}>📭</Text>
-        <Text style={styles.emptyText}>Aucune activité synchronisée</Text>
-        <Text style={styles.emptyHint}>Connectez la montre et lancez une synchronisation</Text>
+        <Text style={styles.emptyText}>{t.noActivities}</Text>
+        <Text style={styles.emptyHint}>{t.connectHint}</Text>
       </View>
     );
   }
@@ -160,11 +161,11 @@ export default function LogListScreen() {
         keyExtractor={item => item.id}
         ListEmptyComponent={
           <View style={styles.emptyFilter}>
-            <Text style={styles.emptyFilterText}>Aucune activité pour ce filtre</Text>
+            <Text style={styles.emptyFilterText}>{t.noFilter}</Text>
           </View>
         }
         ListFooterComponent={
-          <Text style={styles.deleteHint}>Appui long sur une activité pour la supprimer</Text>
+          <Text style={styles.deleteHint}>{t.deleteHint}</Text>
         }
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#fff" />}
         renderItem={({ item }) => (
@@ -234,8 +235,8 @@ function capitalize(s: string): string {
 }
 
 function formatDate(iso: string): string {
-  if (!iso) return 'Date inconnue';
-  return new Date(iso).toLocaleDateString('fr-FR', {
+  if (!iso) return t.unknownDate;
+  return new Date(iso).toLocaleDateString(dateLocale, {
     weekday: 'short', day: 'numeric', month: 'long', year: 'numeric',
   });
 }

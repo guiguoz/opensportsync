@@ -7,6 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { runSync, SyncState } from '../services/SyncService';
+import { t } from '../i18n';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -91,7 +92,7 @@ export default function HomeScreen() {
     try {
       await runSync(setSync);
     } catch (e: any) {
-      Alert.alert('Erreur', e?.message ?? 'Erreur inconnue');
+      Alert.alert(t.error, e?.message ?? t.unknownError);
       setSync(s => ({ ...s, phase: 'error' }));
     }
   }
@@ -103,9 +104,9 @@ export default function HomeScreen() {
     : '#00e5ff';
 
   const btnLabel = isBusy ? phaseLabel(sync.phase)
-    : sync.phase === 'done' ? 'SYNCED'
-    : sync.phase === 'error' ? 'RETRY'
-    : 'SYNC';
+    : sync.phase === 'done' ? t.synced
+    : sync.phase === 'error' ? t.retry
+    : t.sync;
 
   return (
     <View style={styles.container}>
@@ -152,7 +153,7 @@ export default function HomeScreen() {
           onPress={() => navigation.navigate('LogList')}
           activeOpacity={0.8}
         >
-          <Text style={styles.activitiesBtnText}>Voir les activités</Text>
+          <Text style={styles.activitiesBtnText}>{t.viewActivities}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.settingsBtn}
@@ -171,21 +172,21 @@ export default function HomeScreen() {
 
 function phaseLabel(phase: SyncState['phase']): string {
   switch (phase) {
-    case 'connecting': return 'CONN…';
-    case 'fetching':   return 'READ…';
-    case 'writing':    return 'SAVE…';
+    case 'connecting': return t.conn;
+    case 'fetching':   return t.read;
+    case 'writing':    return t.save;
     default:           return '…';
   }
 }
 
 function statusMessage(sync: SyncState): string {
   switch (sync.phase) {
-    case 'idle':       return 'En attente';
-    case 'connecting': return 'Connexion à la montre…';
-    case 'fetching':   return 'Lecture des logs…';
-    case 'writing':    return 'Enregistrement…';
-    case 'done':       return `${sync.newCount} log${sync.newCount !== 1 ? 's' : ''} importé${sync.newCount !== 1 ? 's' : ''}`;
-    case 'error':      return sync.error ?? 'Erreur';
+    case 'idle':       return t.idle;
+    case 'connecting': return t.connecting;
+    case 'fetching':   return t.fetching;
+    case 'writing':    return t.writing;
+    case 'done':       return t.done(sync.newCount);
+    case 'error':      return sync.error ?? t.error;
     default:           return '';
   }
 }

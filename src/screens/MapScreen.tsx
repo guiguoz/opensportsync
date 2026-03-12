@@ -11,6 +11,7 @@ import { RootStackParamList } from '../../App';
 import { readGpxFile } from '../services/GpxService';
 import { parseTrackPoints, computeElevationStats, TrackPoint } from '../services/GpxParser';
 import ElevationChart from '../components/ElevationChart';
+import { t } from '../i18n';
 
 type Route = RouteProp<RootStackParamList, 'Map'>;
 type Nav   = NativeStackNavigationProp<RootStackParamList, 'Map'>;
@@ -48,8 +49,8 @@ function buildLeafletHtml(coords: { lat: number; lng: number }[]): string {
               ';border:2px solid #fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.4)"></div>',
         iconAnchor: [7, 7] });
     };
-    L.marker(lls[0],              { icon: dot('#2ecc71') }).addTo(map).bindPopup('Départ');
-    L.marker(lls[lls.length - 1], { icon: dot('#e74c3c') }).addTo(map).bindPopup('Arrivée');
+    L.marker(lls[0],              { icon: dot('#2ecc71') }).addTo(map).bindPopup('${t.departure}');
+    L.marker(lls[lls.length - 1], { icon: dot('#e74c3c') }).addTo(map).bindPopup('${t.arrival}');
 
     map.fitBounds(line.getBounds(), { padding: [30, 30] });
   }
@@ -72,7 +73,7 @@ export default function MapScreen() {
   useEffect(() => {
     readGpxFile(activity.gpx_path)
       .then(xml => setPoints(parseTrackPoints(xml)))
-      .catch(e => Alert.alert('Erreur', 'Impossible de lire le fichier GPX\n' + e?.message))
+      .catch(e => Alert.alert(t.error, t.readError + e?.message))
       .finally(() => setLoading(false));
   }, [activity.gpx_path]);
 
@@ -91,11 +92,11 @@ export default function MapScreen() {
     if (!auth) {
       const url = await getAuthorizationUrl();
       Alert.alert(
-        'Connexion Livelox',
-        'Vous allez être redirigé vers Livelox pour autoriser l\'accès. Revenez ensuite dans l\'app.',
+        t.liveloxTitle,
+        t.liveloxMsg,
         [
-          { text: 'Annuler', style: 'cancel' },
-          { text: 'Se connecter', onPress: () => Linking.openURL(url) },
+          { text: t.cancel, style: 'cancel' },
+          { text: t.connect, onPress: () => Linking.openURL(url) },
         ]
       );
       return;
@@ -105,14 +106,14 @@ export default function MapScreen() {
       const result = await uploadGpxToLivelox(activity.gpx_path);
       Alert.alert(
         'Livelox',
-        `Activité importée !\n\n${result.viewerUrl}`,
+        `${t.liveloxSuccess}\n\n${result.viewerUrl}`,
         [
-          { text: 'Fermer', style: 'cancel' },
-          { text: 'Voir sur Livelox', onPress: () => Linking.openURL(result.viewerUrl) },
+          { text: t.close, style: 'cancel' },
+          { text: t.viewOnLivelox, onPress: () => Linking.openURL(result.viewerUrl) },
         ]
       );
     } catch (e: any) {
-      Alert.alert('Erreur Livelox', e?.message);
+      Alert.alert(t.liveloxError, e?.message);
     } finally {
       setExporting(false);
     }
@@ -123,11 +124,11 @@ export default function MapScreen() {
     const apiKey = await getRunalyzeApiKey();
     if (!apiKey) {
       Alert.alert(
-        'Clé API manquante',
-        'Configurez votre clé API Runalyze dans les Paramètres.',
+        t.noApiKey,
+        t.noApiKeyMsg,
         [
-          { text: 'Annuler', style: 'cancel' },
-          { text: 'Paramètres', onPress: () => navigation.navigate('Settings') },
+          { text: t.cancel, style: 'cancel' },
+          { text: t.settings, onPress: () => navigation.navigate('Settings') },
         ]
       );
       return;
@@ -136,12 +137,9 @@ export default function MapScreen() {
     try {
       const fitPath = await generateFitFile(activity.gpx_path, activity);
       const result  = await uploadFitToRunalyze(fitPath, apiKey);
-      Alert.alert(
-        'Runalyze ✓',
-        `Activité importée ! (ID : ${result.activityId})\n\nPour l'envoyer vers Suunto : runalyze.com → activité → Partager → Suunto`,
-      );
+      Alert.alert('Runalyze ✓', t.runalyzeOk(result.activityId));
     } catch (e: any) {
-      Alert.alert('Erreur Runalyze', e?.message);
+      Alert.alert(t.runalyzeError, e?.message);
     } finally {
       setExporting(false);
     }
@@ -152,7 +150,7 @@ export default function MapScreen() {
     try {
       await shareFile(activity.gpx_path);
     } catch (e: any) {
-      Alert.alert('Erreur', 'Impossible de partager le fichier\n' + e?.message);
+      Alert.alert(t.error, t.shareError + e?.message);
     }
   }
 
@@ -161,9 +159,9 @@ export default function MapScreen() {
     try {
       const fileName = activity.gpx_path.split('/').pop() ?? `${activity.id}.gpx`;
       await saveToDownloads(activity.gpx_path, fileName);
-      Alert.alert('Enregistré', `Fichier copié dans Téléchargements :\n${fileName}`);
+      Alert.alert(t.savedOk, t.savedMsg(fileName));
     } catch (e: any) {
-      Alert.alert('Erreur', 'Impossible d\'enregistrer\n' + e?.message);
+      Alert.alert(t.error, t.saveError + e?.message);
     }
   }
 
@@ -171,7 +169,7 @@ export default function MapScreen() {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#4caf50" />
-        <Text style={styles.loadingText}>Chargement du parcours…</Text>
+        <Text style={styles.loadingText}>{t.loading}</Text>
       </View>
     );
   }
@@ -179,7 +177,7 @@ export default function MapScreen() {
   if (coords.length === 0) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.errorText}>Aucun point GPS dans ce fichier GPX</Text>
+        <Text style={styles.errorText}>{t.noGps}</Text>
       </View>
     );
   }
@@ -198,10 +196,10 @@ export default function MapScreen() {
 
       {/* ── Infos overlay ── */}
       <View style={styles.overlay}>
-        <StatChip label="Distance" value={formatDist(stats.totalDistance)} />
+        <StatChip label={t.distance} value={formatDist(stats.totalDistance)} />
         <StatChip label="D+" value={`${stats.dPlus} m`} color="#4caf50" />
         <StatChip label="D-" value={`${stats.dMinus} m`} color="#f44336" />
-        <StatChip label="Durée" value={formatDuration(activity.duration_s)} />
+        <StatChip label={t.duration} value={formatDuration(activity.duration_s)} />
       </View>
 
       {/* ── Bouton export flottant ── */}
@@ -216,10 +214,10 @@ export default function MapScreen() {
       {/* ── Menu d'export ── */}
       {showExportMenu && (
         <View style={styles.exportMenu}>
-          <ExportMenuItem label="📤 Partager GPX"                    onPress={handleShareGpx} />
-          <ExportMenuItem label="💾 Enregistrer (Téléchargements)"   onPress={handleSaveToDownloads} />
-          <ExportMenuItem label="📊 Upload Runalyze"                 onPress={handleUploadRunalyze} />
-          <ExportMenuItem label="🔴 Upload Livelox"                  onPress={handleExportLivelox} />
+          <ExportMenuItem label={t.shareGpx}       onPress={handleShareGpx} />
+          <ExportMenuItem label={t.saveDownloads}  onPress={handleSaveToDownloads} />
+          <ExportMenuItem label={t.uploadRunalyze} onPress={handleUploadRunalyze} />
+          <ExportMenuItem label={t.uploadLivelox}  onPress={handleExportLivelox} />
         </View>
       )}
 
