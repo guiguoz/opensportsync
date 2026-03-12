@@ -3,6 +3,12 @@ import { NativeModules, Platform } from 'react-native';
 // ─── Détection locale ─────────────────────────────────────────────────────────
 
 function deviceLocale(): string {
+  // Intl est disponible dans Hermes (RN 0.70+) et respecte la locale système
+  try {
+    const intlLocale = Intl.DateTimeFormat().resolvedOptions().locale;
+    if (intlLocale) return intlLocale;
+  } catch {}
+  // Fallback NativeModules (Old Architecture)
   if (Platform.OS === 'android') {
     return NativeModules.I18nManager?.localeIdentifier ?? 'en';
   }
