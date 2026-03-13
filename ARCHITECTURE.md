@@ -20,6 +20,10 @@ Application Android personnelle (React Native Bare Workflow) pour connecter une 
 | 6 | Fix crash double-free + architecture hardware-agnostique | ✅ |
 | 7 | Partage GPX via share sheet Android | ✅ |
 | 8 | Icône personnalisée (tracé GPS cyan sur fond #16213e) | ✅ |
+| 9 | Export Runalyze (FIT) + SettingsScreen | ✅ |
+| 10 | i18n EN/FR | ✅ |
+| 11 | Sécurité : Keychain credentials, PKCE S256, WebView hardening | ✅ |
+| 12 | OAuth2 Livelox : connect/disconnect dans Settings, SHA-256 pure JS (Hermes) | ✅ |
 
 ---
 
@@ -32,6 +36,8 @@ Application Android personnelle (React Native Bare Workflow) pour connecter une 
 - **Fichiers** : `react-native-fs`
 - **Parser GPX** : `fast-xml-parser`
 - **Stockage clé-valeur** : `@react-native-async-storage/async-storage`
+- **Sécurité** : `react-native-keychain` (credentials OAuth2), PKCE S256, WebView hardening
+- **i18n** : EN/FR intégré (`src/i18n/index.ts`)
 - **Couche Native** : Kotlin (UsbManager, FileDescriptor, FileProvider, MediaStore) + NDK/C++ (JNI + libambit + libusb)
 
 ---
@@ -57,20 +63,27 @@ Application Android personnelle (React Native Bare Workflow) pour connecter une 
 ├── src/
 │   ├── screens/
 │   │   ├── HomeScreen.tsx          # Dashboard sportif : bouton SYNC circulaire + tracé GPS
-│   │   ├── LogListScreen.tsx       # Liste activités SQLite
-│   │   └── MapScreen.tsx           # Carte IGN + profil altimétrique + export
+│   │   ├── LogListScreen.tsx       # Liste activités SQLite (filtres par type)
+│   │   ├── MapScreen.tsx           # Carte IGN + profil altimétrique + export
+│   │   └── SettingsScreen.tsx      # Clé API Runalyze + connexion/déconnexion Livelox
 │   ├── components/
 │   │   └── ElevationChart.tsx      # Profil altimétrique SVG-like
 │   ├── services/
 │   │   ├── SyncService.ts          # Orchestration sync montre → SQLite
 │   │   ├── GpxService.ts           # Écriture fichiers GPX
 │   │   ├── GpxParser.ts            # Parsing GPX (coordonnées, dénivelé, type activité)
-│   │   └── ApiLivelox.ts           # OAuth2 + upload GPX (credentials dans secrets.ts)
+│   │   ├── ApiLivelox.ts           # OAuth2 PKCE S256 + upload GPX + SHA-256 pure JS
+│   │   ├── ApiRunalyze.ts          # Upload FIT vers Runalyze (clé API via Keychain)
+│   │   ├── FitExport.ts            # Encodeur FIT TypeScript pur (sans dépendance)
+│   │   ├── SgeeService.ts          # Export format SGEE (orienteering)
+│   │   └── VikazimutExport.ts      # Export format Vikazimut (orienteering)
 │   ├── native/
 │   │   ├── AmbitUsbModule.ts       # Bridge TS→Kotlin (connect, shareFile, saveToDownloads)
 │   │   └── DeviceConnector.ts      # Interface DeviceProvider (architecture agnostique)
 │   ├── database/
 │   │   └── db.ts                   # SQLite helper (activities, gpx_path, sport_type)
+│   ├── i18n/
+│   │   └── index.ts                # Traductions EN/FR + hook t()
 │   ├── config/
 │   │   └── secrets.ts              # Credentials Livelox — GITIGNORE
 │   └── specs/                      # Vide — codegenConfig.jsSrcsDir (évite symboles dupliqués)
@@ -100,7 +113,17 @@ Application Android personnelle (React Native Bare Workflow) pour connecter une 
 ### Export / Partage
 - **Partager GPX** : share sheet Android via FileProvider (content:// URI) — compatible Strava, Files, email…
 - **Enregistrer dans Téléchargements** : MediaStore (API 29+) / copie directe (API 28)
-- **Livelox** : OAuth2 + upload GPX — en attente credentials (LIVELOX_CLIENT_ID / SECRET)
+- **Runalyze** : upload FIT (format natif) via clé API personnelle stockée dans Keychain
+- **Livelox** : OAuth2 PKCE S256 + upload GPX — bouton connect/disconnect dans Settings (nécessite `LIVELOX_CLIENT_ID` dans `secrets.ts`)
+- **SGEE / Vikazimut** : formats export orienteering
+
+### Sécurité
+- Credentials OAuth2 stockés dans Keychain (react-native-keychain), jamais en AsyncStorage
+- PKCE S256 : SHA-256 implémenté en TypeScript pur (crypto.subtle absent dans Hermes)
+- WebView durci (no JS injection, no file access)
+
+### i18n
+- EN/FR intégré (`src/i18n/index.ts`), détection locale via `Intl.DateTimeFormat`
 
 ### UI
 - HomeScreen : dashboard sportif, bouton SYNC circulaire, anneau pulsant, tracé GPS en filigrane
@@ -135,10 +158,12 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - USBDEVFS_INTERRUPT défini manuellement (non disponible dans NDK headers)
 - `minSdkVersion=28` (iconv Bionic disponible depuis API 28)
 - libambit corrigé : suppression du double-free dans `log_push_callback`
+- SHA-256 implémenté en TypeScript pur dans `ApiLivelox.ts` : `crypto.subtle` absent dans Hermes (moteur JS RN)
+- `assembleDebug` n'embarque pas le JS automatiquement → toujours lancer `react-native bundle` en premier
 
 ---
 
 ## Prochaines étapes
 
-1. **Livelox** : intégrer credentials dès réception de Mats → bouton "Exporter vers Livelox" dans MapScreen
+1. **Livelox** : obtenir `LIVELOX_CLIENT_ID` auprès de Mats pour finaliser l'export (OAuth2 côté app est prêt)
 2. **Play Store** : clé de signature, fiche store, captures d'écran, politique de confidentialité
