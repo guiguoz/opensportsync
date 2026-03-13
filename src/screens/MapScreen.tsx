@@ -88,34 +88,38 @@ export default function MapScreen() {
 
   async function handleExportLivelox() {
     setShowExportMenu(false);
-    const auth = await isAuthenticated();
-    if (!auth) {
-      const url = await getAuthorizationUrl();
-      Alert.alert(
-        t.liveloxTitle,
-        t.liveloxMsg,
-        [
-          { text: t.cancel, style: 'cancel' },
-          { text: t.connect, onPress: () => Linking.openURL(url) },
-        ]
-      );
-      return;
-    }
-    setExporting(true);
     try {
-      const result = await uploadGpxToLivelox(activity.gpx_path);
-      Alert.alert(
-        'Livelox',
-        `${t.liveloxSuccess}\n\n${result.viewerUrl}`,
-        [
-          { text: t.close, style: 'cancel' },
-          { text: t.viewOnLivelox, onPress: () => Linking.openURL(result.viewerUrl) },
-        ]
-      );
+      const auth = await isAuthenticated();
+      if (!auth) {
+        const url = await getAuthorizationUrl();
+        Alert.alert(
+          t.liveloxTitle,
+          t.liveloxMsg,
+          [
+            { text: t.cancel, style: 'cancel' },
+            { text: t.connect, onPress: () => Linking.openURL(url) },
+          ]
+        );
+        return;
+      }
+      setExporting(true);
+      try {
+        const result = await uploadGpxToLivelox(activity.gpx_path);
+        Alert.alert(
+          'Livelox',
+          `${t.liveloxSuccess}\n\n${result.viewerUrl}`,
+          [
+            { text: t.close, style: 'cancel' },
+            { text: t.viewOnLivelox, onPress: () => Linking.openURL(result.viewerUrl) },
+          ]
+        );
+      } catch (e: any) {
+        Alert.alert(t.liveloxError, e?.message ?? String(e));
+      } finally {
+        setExporting(false);
+      }
     } catch (e: any) {
-      Alert.alert(t.liveloxError, e?.message);
-    } finally {
-      setExporting(false);
+      Alert.alert(t.liveloxError, e?.message ?? String(e));
     }
   }
 

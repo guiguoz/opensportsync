@@ -86,7 +86,13 @@ const fr = {
   departure:      'Départ',
   arrival:        'Arrivée',
 
-  // SettingsScreen
+  // SettingsScreen — Livelox
+  liveloxSettingsDesc: "Connectez votre compte Livelox pour exporter vos parcours. La connexion utilise OAuth2 PKCE.",
+  liveloxConnectedStatus: 'Compte Livelox connecté',
+  liveloxDisconnectBtn: 'Se déconnecter de Livelox',
+  liveloxDisconnected: 'Déconnecté de Livelox.',
+
+  // SettingsScreen — Runalyze
   emptyKey:       'Clé vide',
   emptyKeyMsg:    'Entrez votre clé API Runalyze.',
   keySaved:       'Clé API Runalyze sauvegardée.',
@@ -167,6 +173,11 @@ const en: typeof fr = {
   duration:       'Duration',
   departure:      'Start',
   arrival:        'Finish',
+
+  liveloxSettingsDesc: 'Connect your Livelox account to export your tracks. The connection uses OAuth2 PKCE.',
+  liveloxConnectedStatus: 'Livelox account connected',
+  liveloxDisconnectBtn: 'Disconnect from Livelox',
+  liveloxDisconnected: 'Disconnected from Livelox.',
 
   emptyKey:       'Empty key',
   emptyKeyMsg:    'Enter your Runalyze API key.',

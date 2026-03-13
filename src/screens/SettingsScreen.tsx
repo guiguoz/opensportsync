@@ -1,24 +1,29 @@
 import React, { useCallback, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, Alert, ScrollView, ActivityIndicator,
+  StyleSheet, Alert, ScrollView, ActivityIndicator, Linking,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   getRunalyzeApiKey, saveRunalyzeApiKey, removeRunalyzeApiKey,
 } from '../services/ApiRunalyze';
+import {
+  isAuthenticated as liveloxIsAuth, getAuthorizationUrl, logout as liveloxLogout,
+} from '../services/ApiLivelox';
 import { t } from '../i18n';
 
 export default function SettingsScreen() {
   const [runalyzeKey, setRunalyzeKey]     = useState('');
   const [savedKey, setSavedKey]           = useState<string | null>(null);
   const [saving, setSaving]               = useState(false);
+  const [liveloxAuth, setLiveloxAuth]     = useState(false);
 
   useFocusEffect(useCallback(() => {
     getRunalyzeApiKey().then(k => {
       setSavedKey(k);
       setRunalyzeKey(k ?? '');
     });
+    liveloxIsAuth().then(setLiveloxAuth);
   }, []));
 
   async function handleSaveRunalyze() {
@@ -43,8 +48,44 @@ export default function SettingsScreen() {
     Alert.alert(t.deleted, t.keyDeleted);
   }
 
+  async function handleLiveloxConnect() {
+    try {
+      const url = await getAuthorizationUrl();
+      await Linking.openURL(url);
+    } catch (e: any) {
+      Alert.alert(t.liveloxError, e?.message ?? String(e));
+    }
+  }
+
+  async function handleLiveloxDisconnect() {
+    await liveloxLogout();
+    setLiveloxAuth(false);
+    Alert.alert('Livelox', t.liveloxDisconnected);
+  }
+
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+
+      {/* ── Livelox ── */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Livelox</Text>
+        <Text style={styles.sectionDesc}>{t.liveloxSettingsDesc}</Text>
+        {liveloxAuth ? (
+          <View>
+            <View style={styles.statusRow}>
+              <View style={styles.dot} />
+              <Text style={styles.statusText}>{t.liveloxConnectedStatus}</Text>
+            </View>
+            <TouchableOpacity style={[styles.btn, styles.btnDanger, { marginTop: 10 }]} onPress={handleLiveloxDisconnect}>
+              <Text style={styles.btnText}>{t.liveloxDisconnectBtn}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity style={[styles.btn, styles.btnPrimary, { marginTop: 10 }]} onPress={handleLiveloxConnect}>
+            <Text style={styles.btnText}>{t.connect}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
       {/* ── Runalyze ── */}
       <View style={styles.section}>
