@@ -17,6 +17,7 @@ Android app to sync GPS activity logs from Suunto Ambit watches via USB OTG, dis
 - Activity filters by type in the log list
 - Local SQLite database — automatic rebuild from GPX files on device
 - Permanent deletion (deleted activities are never re-imported on next sync)
+- Export to **Strava** (OAuth2 — one-tap upload)
 - Export to **Livelox** (OAuth2 — orienteering route analysis)
 - Export to **Runalyze** (FIT format — training analytics + push to Suunto app)
 - Share GPX / Save to Downloads
@@ -77,9 +78,12 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 Create `src/config/secrets.ts` (not committed — never share this file):
 
 ```typescript
-export const LIVELOX_CLIENT_ID = 'your_client_id';
+export const LIVELOX_CLIENT_ID     = 'your_livelox_client_id';
+export const STRAVA_CLIENT_ID      = 'your_strava_client_id';
+export const STRAVA_CLIENT_SECRET  = 'your_strava_client_secret';
 ```
 
+- **Strava**: OAuth2 flow handled in-app. Add your `client_id` and `client_secret` from [strava.com/settings/api](https://www.strava.com/settings/api). Set Authorization Callback Domain to `opensportsync`.
 - **Runalyze API key**: enter your personal key in the app Settings screen. Generate it at [runalyze.com/settings/config/account](https://runalyze.com/settings/config/account).
 - **Livelox**: OAuth2 flow handled in-app. Requires a registered `client_id` from [livelox.com](https://livelox.com).
 
@@ -107,6 +111,7 @@ Application Android pour synchroniser les activités GPS d'une montre Suunto Amb
 - Filtres par type d'activité dans la liste
 - Base de données SQLite locale — reconstruction automatique depuis les fichiers GPX présents sur l'appareil
 - Suppression permanente (les activités supprimées ne sont jamais réimportées lors des synchronisations suivantes)
+- Export vers **Strava** (OAuth2 — upload en un tap)
 - Export vers **Livelox** (OAuth2 — analyse de parcours d'orientation)
 - Export vers **Runalyze** (format FIT — analyse d'entraînement + envoi vers l'app Suunto)
 - Partage GPX / Enregistrement dans les Téléchargements
@@ -167,9 +172,12 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 Créer `src/config/secrets.ts` (non versionné — ne jamais partager ce fichier) :
 
 ```typescript
-export const LIVELOX_CLIENT_ID = 'votre_client_id';
+export const LIVELOX_CLIENT_ID     = 'votre_livelox_client_id';
+export const STRAVA_CLIENT_ID      = 'votre_strava_client_id';
+export const STRAVA_CLIENT_SECRET  = 'votre_strava_client_secret';
 ```
 
+- **Strava** : flux OAuth2 géré dans l'app. Ajouter `client_id` et `client_secret` depuis [strava.com/settings/api](https://www.strava.com/settings/api). Authorization Callback Domain : `opensportsync`.
 - **Clé API Runalyze** : à saisir dans l'écran Paramètres de l'app. À générer sur [runalyze.com/settings/config/account](https://runalyze.com/settings/config/account).
 - **Livelox** : flux OAuth2 géré dans l'app. Nécessite un `client_id` enregistré auprès de [livelox.com](https://livelox.com).
 

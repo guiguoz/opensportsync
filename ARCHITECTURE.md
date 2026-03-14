@@ -24,6 +24,7 @@ Application Android personnelle (React Native Bare Workflow) pour connecter une 
 | 10 | i18n EN/FR | ✅ |
 | 11 | Sécurité : Keychain credentials, PKCE S256, WebView hardening | ✅ |
 | 12 | OAuth2 Livelox : connect/disconnect dans Settings, SHA-256 pure JS (Hermes) | ✅ |
+| 13 | Intégration Strava : OAuth2, upload GPX, polling, connect/disconnect Settings | ✅ |
 
 ---
 
@@ -65,13 +66,14 @@ Application Android personnelle (React Native Bare Workflow) pour connecter une 
 │   │   ├── HomeScreen.tsx          # Dashboard sportif : bouton SYNC circulaire + tracé GPS
 │   │   ├── LogListScreen.tsx       # Liste activités SQLite (filtres par type)
 │   │   ├── MapScreen.tsx           # Carte IGN + profil altimétrique + export
-│   │   └── SettingsScreen.tsx      # Clé API Runalyze + connexion/déconnexion Livelox
+│   │   └── SettingsScreen.tsx      # Clé API Runalyze + connexion/déconnexion Strava & Livelox
 │   ├── components/
 │   │   └── ElevationChart.tsx      # Profil altimétrique SVG-like
 │   ├── services/
 │   │   ├── SyncService.ts          # Orchestration sync montre → SQLite
 │   │   ├── GpxService.ts           # Écriture fichiers GPX
 │   │   ├── GpxParser.ts            # Parsing GPX (coordonnées, dénivelé, type activité)
+│   │   ├── ApiStrava.ts            # OAuth2 + upload GPX + polling + token refresh (Keychain)
 │   │   ├── ApiLivelox.ts           # OAuth2 PKCE S256 + upload GPX + SHA-256 pure JS
 │   │   ├── ApiRunalyze.ts          # Upload FIT vers Runalyze (clé API via Keychain)
 │   │   ├── FitExport.ts            # Encodeur FIT TypeScript pur (sans dépendance)
@@ -85,7 +87,7 @@ Application Android personnelle (React Native Bare Workflow) pour connecter une 
 │   ├── i18n/
 │   │   └── index.ts                # Traductions EN/FR + hook t()
 │   ├── config/
-│   │   └── secrets.ts              # Credentials Livelox — GITIGNORE
+│   │   └── secrets.ts              # Credentials Livelox + Strava — GITIGNORE
 │   └── specs/                      # Vide — codegenConfig.jsSrcsDir (évite symboles dupliqués)
 ├── scripts/
 │   └── generate_icons.py           # Génère icônes mipmap (Pillow)
@@ -113,6 +115,7 @@ Application Android personnelle (React Native Bare Workflow) pour connecter une 
 ### Export / Partage
 - **Partager GPX** : share sheet Android via FileProvider (content:// URI) — compatible Strava, Files, email…
 - **Enregistrer dans Téléchargements** : MediaStore (API 29+) / copie directe (API 28)
+- **Strava** : OAuth2 + upload GPX + polling statut — bouton connect/disconnect dans Settings (nécessite `STRAVA_CLIENT_ID` + `STRAVA_CLIENT_SECRET` dans `secrets.ts`)
 - **Runalyze** : upload FIT (format natif) via clé API personnelle stockée dans Keychain
 - **Livelox** : OAuth2 PKCE S256 + upload GPX — bouton connect/disconnect dans Settings (nécessite `LIVELOX_CLIENT_ID` dans `secrets.ts`)
 - **SGEE / Vikazimut** : formats export orienteering
@@ -167,3 +170,12 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 1. **Livelox** : obtenir `LIVELOX_CLIENT_ID` auprès de Mats pour finaliser l'export (OAuth2 côté app est prêt)
 2. **Play Store** : clé de signature, fiche store, captures d'écran, politique de confidentialité
+
+## Export / Intégrations
+
+| Service | Auth | Format | Statut |
+|---------|------|--------|--------|
+| Strava | OAuth2 (client_secret) | GPX multipart | ✅ |
+| Livelox | OAuth2 PKCE S256 | GPX JSON | ✅ (en attente client_id) |
+| Runalyze | Clé API | FIT binaire | ✅ |
+| GPX direct | — | GPX | ✅ |
