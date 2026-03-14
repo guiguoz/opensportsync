@@ -41,16 +41,8 @@ jobs:
       - name: Create version.ts
         run: echo "export const BUILD_SHA = '${{ github.sha }}';" > src/config/version.ts
 
-      - name: Bundle JS
-        run: |
-          npx react-native bundle \
-            --platform android --dev false \
-            --entry-file index.js \
-            --bundle-output android/app/src/main/assets/index.android.bundle \
-            --assets-dest android/app/src/main/res
-
       - name: Build APK
-        run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+        run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon -Porg.gradle.jvmargs="-Xmx4096m"
 
       - name: Publish Release
         uses: softprops/action-gh-release@v2
