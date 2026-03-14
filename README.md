@@ -1,5 +1,7 @@
 # OpenSportsSync
 
+[![Build APK](https://github.com/guiguoz/opensportsync/actions/workflows/build.yml/badge.svg)](https://github.com/guiguoz/opensportsync/actions/workflows/build.yml)
+
 > 🇫🇷 [Lire en français](#français) · 🇬🇧 English below
 
 ---
@@ -7,6 +9,15 @@
 ## English
 
 Android app to sync GPS activity logs from Suunto Ambit watches via USB OTG, display them on a map, and export them to training platforms.
+
+### Installation / Download
+
+You don't need to build the app yourself.
+1. Go to the [Releases page](https://github.com/guiguoz/opensportsync/releases/latest)
+2. Download the latest `app-debug.apk` file to your Android device
+3. Install it (you may need to allow "Install from unknown sources")
+
+**In-app updates:** The app automatically checks for new GitHub releases on startup and prompts you to update when a new version is available!
 
 ### Features
 
@@ -49,23 +60,19 @@ Since the Ambit 1 has no BLE and Movescount is closed, the path to the official 
 - **fast-xml-parser** — GPX parsing
 - **FIT encoder** — pure TypeScript, no dependencies (`src/services/FitExport.ts`)
 
-### Build
+### Local Build (Development)
+
+If you want to modify the source code:
 
 ```bash
-# 1. Bundle JS (required before every native build)
-npx react-native bundle --platform android --dev false \
-  --entry-file index.js \
-  --bundle-output android/app/src/main/assets/index.android.bundle \
-  --assets-dest android/app/src/main/res
+# Clean install
+npm ci
 
-# 2. Build APK
-cd android && ./gradlew assembleDebug
-
-# 3. Install
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+# Start the bundler (Metro) and install on connected device (ADB)
+npx react-native run-android
 ```
 
-**Important:** `assembleDebug` does NOT automatically re-bundle the JS. Always run step 1 after any TypeScript/TSX change.
+*Note: The native code (libambit) handles USB OTG communication via JNI. Building requires NDK (r26+) and CMake, which Gradle automatically downloads.*
 
 ### Requirements
 
@@ -101,6 +108,15 @@ MIT
 ## Français
 
 Application Android pour synchroniser les activités GPS d'une montre Suunto Ambit via USB OTG, les afficher sur une carte et les exporter vers des plateformes d'entraînement.
+
+### Installation / Téléchargement
+
+Pas besoin de compiler l'application vous-même.
+1. Allez sur la [page des Releases GitHub](https://github.com/guiguoz/opensportsync/releases/latest)
+2. Téléchargez le dernier fichier `app-debug.apk` sur votre téléphone
+3. Installez-le (il faudra autoriser "l'installation d'applications de sources inconnues")
+
+**Mises à jour in-app :** L'application vérifie automatiquement s'il existe une nouvelle version sur GitHub à chaque lancement et vous propose de la télécharger !
 
 ### Fonctionnalités
 
@@ -143,23 +159,19 @@ Comme l'Ambit 1 n'a pas de BLE et que Movescount est fermé, le chemin vers l'ap
 - **fast-xml-parser** — parsing GPX
 - **Encodeur FIT** — TypeScript pur, sans dépendances (`src/services/FitExport.ts`)
 
-### Build
+### Build local (Développement)
+
+Si vous souhaitez modifier le code source :
 
 ```bash
-# 1. Bundler le JS (obligatoire avant chaque build natif)
-npx react-native bundle --platform android --dev false \
-  --entry-file index.js \
-  --bundle-output android/app/src/main/assets/index.android.bundle \
-  --assets-dest android/app/src/main/res
+# Installation propre
+npm ci
 
-# 2. Build APK
-cd android && ./gradlew assembleDebug
-
-# 3. Installer
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+# Lancer le serveur Metro et installer sur l'appareil connecté via ADB
+npx react-native run-android
 ```
 
-**Important :** `assembleDebug` n'embarque PAS le bundle JS automatiquement. Toujours exécuter l'étape 1 après tout changement TypeScript/TSX.
+*Note : le code natif (libambit) communique avec le port USB via le NDK (JNI). La compilation nécessite le NDK (r26+) et CMake, que Gradle télécharge automatiquement.*
 
 ### Prérequis
 
