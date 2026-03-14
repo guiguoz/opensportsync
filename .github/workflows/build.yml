@@ -50,7 +50,7 @@ jobs:
             --assets-dest android/app/src/main/res
 
       - name: Build APK
-        run: cd android && ./gradlew assembleDebug --no-daemon
+        run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
 
       - name: Publish Release
         uses: softprops/action-gh-release@v2
