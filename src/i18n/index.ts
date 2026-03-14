@@ -121,6 +121,12 @@ const fr = {
   deleteBtn:       'Supprimer',
   keyStored:       'Clé enregistrée',
 
+  // App.tsx — mise à jour
+  updateTitle:    'Mise à jour disponible',
+  updateMsg:      'Une nouvelle version de l\'app est disponible.',
+  updateLater:    'Plus tard',
+  updateDownload: 'Télécharger',
+
   // App.tsx
   logListTitle:  'Activités',
   mapFallback:   'Parcours',
@@ -207,6 +213,11 @@ const en: typeof fr = {
   saveBtn:         'Save',
   deleteBtn:       'Delete',
   keyStored:       'Key saved',
+
+  updateTitle:    'Update available',
+  updateMsg:      'A new version of the app is available.',
+  updateLater:    'Later',
+  updateDownload: 'Download',
 
   logListTitle:  'Activities',
   mapFallback:   'Track',

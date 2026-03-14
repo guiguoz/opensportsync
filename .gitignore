@@ -85,8 +85,9 @@ preview.html
 android/app/src/main/res/drawable-*/
 android/app/src/main/res/raw/
 
-# Secrets (credentials API — ne jamais committer)
+# Secrets + version (générés automatiquement — ne jamais committer)
 src/config/secrets.ts
+src/config/version.ts
 
 # Yarn
 .yarn/*

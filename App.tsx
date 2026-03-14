@@ -11,6 +11,7 @@ import SettingsScreen from './src/screens/SettingsScreen';
 import { ActivityRecord } from './src/database/db';
 import { handleOAuthCallback as handleLiveloxCallback } from './src/services/ApiLivelox';
 import { handleOAuthCallback as handleStravaCallback } from './src/services/ApiStrava';
+import { checkForUpdate } from './src/services/UpdateService';
 import { t, dateLocale } from './src/i18n';
 
 // ─── Types de navigation ──────────────────────────────────────────────────────
@@ -55,6 +56,19 @@ export default function App() {
     const sub = Linking.addEventListener('url', ({ url }) => processOAuthUrl(url));
     // App lancée via le deep link (app froide)
     Linking.getInitialURL().then(processOAuthUrl);
+    // Vérification de mise à jour
+    checkForUpdate().then(({ available, downloadUrl }) => {
+      if (available) {
+        Alert.alert(
+          t.updateTitle,
+          t.updateMsg,
+          [
+            { text: t.updateLater, style: 'cancel' },
+            { text: t.updateDownload, onPress: () => Linking.openURL(downloadUrl) },
+          ]
+        );
+      }
+    });
     return () => sub.remove();
   }, []);
 
