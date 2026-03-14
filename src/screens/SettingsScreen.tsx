@@ -10,6 +10,9 @@ import {
 import {
   isAuthenticated as liveloxIsAuth, getAuthorizationUrl, logout as liveloxLogout,
 } from '../services/ApiLivelox';
+import {
+  isAuthenticated as stravaIsAuth, getAuthorizationUrl as stravaAuthUrl, logout as stravaLogout,
+} from '../services/ApiStrava';
 import { t } from '../i18n';
 
 export default function SettingsScreen() {
@@ -17,6 +20,7 @@ export default function SettingsScreen() {
   const [savedKey, setSavedKey]           = useState<string | null>(null);
   const [saving, setSaving]               = useState(false);
   const [liveloxAuth, setLiveloxAuth]     = useState(false);
+  const [stravaAuth, setStravaAuth]       = useState(false);
 
   useFocusEffect(useCallback(() => {
     getRunalyzeApiKey().then(k => {
@@ -24,6 +28,7 @@ export default function SettingsScreen() {
       setRunalyzeKey(k ?? '');
     });
     liveloxIsAuth().then(setLiveloxAuth);
+    stravaIsAuth().then(setStravaAuth);
   }, []));
 
   async function handleSaveRunalyze() {
@@ -48,6 +53,21 @@ export default function SettingsScreen() {
     Alert.alert(t.deleted, t.keyDeleted);
   }
 
+  async function handleStravaConnect() {
+    try {
+      const url = stravaAuthUrl();
+      await Linking.openURL(url);
+    } catch (e: any) {
+      Alert.alert(t.stravaError, e?.message ?? String(e));
+    }
+  }
+
+  async function handleStravaDisconnect() {
+    await stravaLogout();
+    setStravaAuth(false);
+    Alert.alert('Strava', t.stravaDisconnected);
+  }
+
   async function handleLiveloxConnect() {
     try {
       const url = await getAuthorizationUrl();
@@ -65,6 +85,27 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+
+      {/* ── Strava ── */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{t.stravaSection}</Text>
+        <Text style={styles.sectionDesc}>{t.stravaSettingsDesc}</Text>
+        {stravaAuth ? (
+          <View>
+            <View style={styles.statusRow}>
+              <View style={styles.dot} />
+              <Text style={styles.statusText}>{t.stravaConnectedStatus}</Text>
+            </View>
+            <TouchableOpacity style={[styles.btn, styles.btnDanger, { marginTop: 10 }]} onPress={handleStravaDisconnect}>
+              <Text style={styles.btnText}>{t.stravaDisconnectBtn}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity style={[styles.btn, styles.btnOrange, { marginTop: 10 }]} onPress={handleStravaConnect}>
+            <Text style={styles.btnText}>{t.connect}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
       {/* ── Livelox ── */}
       <View style={styles.section}>
@@ -171,6 +212,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   btnPrimary: { backgroundColor: '#00e5ff22', borderWidth: 1, borderColor: '#00e5ff' },
+  btnOrange:  { backgroundColor: '#fc4c0222', borderWidth: 1, borderColor: '#fc4c02' },
   btnDanger:  { backgroundColor: '#f4433622', borderWidth: 1, borderColor: '#f44336' },
   btnDisabled: { opacity: 0.5 },
   btnText: { color: '#fff', fontWeight: '600', fontSize: 14 },

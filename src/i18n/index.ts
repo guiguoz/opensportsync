@@ -81,10 +81,23 @@ const fr = {
   saveDownloads:  '💾 Enregistrer (Téléchargements)',
   uploadRunalyze: '📊 Upload Runalyze',
   uploadLivelox:  '🔴 Upload Livelox',
+  uploadStrava:   '🟠 Upload Strava',
   distance:       'Distance',
   duration:       'Durée',
   departure:      'Départ',
   arrival:        'Arrivée',
+
+  // SettingsScreen — Strava
+  stravaSection:         'Strava',
+  stravaSettingsDesc:    'Connectez votre compte Strava pour exporter vos activités. La connexion utilise OAuth2.',
+  stravaConnectedStatus: 'Compte Strava connecté',
+  stravaDisconnectBtn:   'Se déconnecter de Strava',
+  stravaDisconnected:    'Déconnecté de Strava.',
+  stravaConnected:       'Connexion réussie ! Vous pouvez maintenant exporter vers Strava.',
+  stravaError:           'Erreur Strava',
+  stravaNotConnected:    'Connectez d\'abord Strava dans les Paramètres.',
+  viewOnStrava:          'Voir sur Strava',
+  stravaSuccess:         'Activité uploadée sur Strava !',
 
   // SettingsScreen — Livelox
   liveloxSettingsDesc: "Connectez votre compte Livelox pour exporter vos parcours. La connexion utilise OAuth2 PKCE.",
@@ -169,6 +182,7 @@ const en: typeof fr = {
   saveDownloads:  '💾 Save to Downloads',
   uploadRunalyze: '📊 Upload to Runalyze',
   uploadLivelox:  '🔴 Upload to Livelox',
+  uploadStrava:   '🟠 Upload to Strava',
   distance:       'Distance',
   duration:       'Duration',
   departure:      'Start',
@@ -199,6 +213,17 @@ const en: typeof fr = {
   settingsTitle: 'Settings',
   liveloxConnected: 'Connected! You can now export your activities.',
   oauthMissingCode: 'OAuth code missing in callback',
+
+  stravaSection:         'Strava',
+  stravaSettingsDesc:    'Connect your Strava account to export your activities. The connection uses OAuth2.',
+  stravaConnectedStatus: 'Strava account connected',
+  stravaDisconnectBtn:   'Disconnect from Strava',
+  stravaDisconnected:    'Disconnected from Strava.',
+  stravaConnected:       'Connected! You can now export activities to Strava.',
+  stravaError:           'Strava Error',
+  stravaNotConnected:    'Connect Strava first in Settings.',
+  viewOnStrava:          'View on Strava',
+  stravaSuccess:         'Activity uploaded to Strava!',
 };
 
 export const t = isFrench ? fr : en;

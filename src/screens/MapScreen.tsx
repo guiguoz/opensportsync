@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, Lin
 import { shareFile, saveToDownloads } from '../native/AmbitUsbModule';
 import { WebView } from 'react-native-webview';
 import { uploadGpxToLivelox, isAuthenticated, getAuthorizationUrl } from '../services/ApiLivelox';
+import { uploadGpxToStrava, isAuthenticated as stravaIsAuthenticated } from '../services/ApiStrava';
 import { getRunalyzeApiKey, uploadFitToRunalyze } from '../services/ApiRunalyze';
 import { generateFitFile } from '../services/FitExport';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
@@ -149,6 +150,46 @@ export default function MapScreen() {
     }
   }
 
+  async function handleUploadStrava() {
+    setShowExportMenu(false);
+    try {
+      const auth = await stravaIsAuthenticated();
+      if (!auth) {
+        Alert.alert(
+          'Strava',
+          t.stravaNotConnected,
+          [
+            { text: t.cancel, style: 'cancel' },
+            { text: t.settings, onPress: () => navigation.navigate('Settings') },
+          ]
+        );
+        return;
+      }
+      setExporting(true);
+      try {
+        const result = await uploadGpxToStrava(
+          activity.gpx_path,
+          activity.id,
+          activity.activity_type,
+        );
+        Alert.alert(
+          'Strava',
+          t.stravaSuccess,
+          [
+            { text: t.close, style: 'cancel' },
+            { text: t.viewOnStrava, onPress: () => Linking.openURL(result.stravaUrl) },
+          ]
+        );
+      } catch (e: any) {
+        Alert.alert(t.stravaError, e?.message ?? String(e));
+      } finally {
+        setExporting(false);
+      }
+    } catch (e: any) {
+      Alert.alert(t.stravaError, e?.message ?? String(e));
+    }
+  }
+
   async function handleShareGpx() {
     setShowExportMenu(false);
     try {
@@ -222,6 +263,7 @@ export default function MapScreen() {
           <ExportMenuItem label={t.saveDownloads}  onPress={handleSaveToDownloads} />
           <ExportMenuItem label={t.uploadRunalyze} onPress={handleUploadRunalyze} />
           <ExportMenuItem label={t.uploadLivelox}  onPress={handleExportLivelox} />
+          <ExportMenuItem label={t.uploadStrava}   onPress={handleUploadStrava} />
         </View>
       )}
 

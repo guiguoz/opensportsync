@@ -9,7 +9,8 @@ import LogListScreen from './src/screens/LogListScreen';
 import MapScreen from './src/screens/MapScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import { ActivityRecord } from './src/database/db';
-import { handleOAuthCallback } from './src/services/ApiLivelox';
+import { handleOAuthCallback as handleLiveloxCallback } from './src/services/ApiLivelox';
+import { handleOAuthCallback as handleStravaCallback } from './src/services/ApiStrava';
 import { t, dateLocale } from './src/i18n';
 
 // ─── Types de navigation ──────────────────────────────────────────────────────
@@ -23,19 +24,26 @@ export type RootStackParamList = {
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-// ─── Handler deep link OAuth2 Livelox ────────────────────────────────────────
+// ─── Handler deep link OAuth2 ─────────────────────────────────────────────────
 
-const OAUTH_PREFIX = 'opensportsync://oauth/livelox';
+const LIVELOX_OAUTH_PREFIX = 'opensportsync://oauth/livelox';
+const STRAVA_OAUTH_PREFIX  = 'opensportsync://oauth/strava';
 
 async function processOAuthUrl(url: string | null) {
-  if (!url || !url.startsWith(OAUTH_PREFIX)) return;
+  if (!url) return;
   try {
     const code = new URL(url).searchParams.get('code');
     if (!code) throw new Error(t.oauthMissingCode);
-    await handleOAuthCallback(code);
-    Alert.alert('Livelox', t.liveloxConnected);
+
+    if (url.startsWith(LIVELOX_OAUTH_PREFIX)) {
+      await handleLiveloxCallback(code);
+      Alert.alert('Livelox', t.liveloxConnected);
+    } else if (url.startsWith(STRAVA_OAUTH_PREFIX)) {
+      await handleStravaCallback(code);
+      Alert.alert('Strava', t.stravaConnected);
+    }
   } catch (e: any) {
-    Alert.alert(t.liveloxError, e?.message);
+    Alert.alert(t.error, e?.message);
   }
 }
 
