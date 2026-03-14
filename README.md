@@ -83,7 +83,7 @@ export const STRAVA_CLIENT_ID      = 'your_strava_client_id';
 export const STRAVA_CLIENT_SECRET  = 'your_strava_client_secret';
 ```
 
-- **Strava**: OAuth2 flow handled in-app. Add your `client_id` and `client_secret` from [strava.com/settings/api](https://www.strava.com/settings/api). Set Authorization Callback Domain to `opensportsync`.
+- **Strava**: OAuth2 flow handled in-app. Add your `client_id` and `client_secret` from [strava.com/settings/api](https://www.strava.com/settings/api). Set **Authorization Callback Domain to `oauth`** (the host part of `opensportsync://oauth/strava`).
 - **Runalyze API key**: enter your personal key in the app Settings screen. Generate it at [runalyze.com/settings/config/account](https://runalyze.com/settings/config/account).
 - **Livelox**: OAuth2 flow handled in-app. Requires a registered `client_id` from [livelox.com](https://livelox.com).
 
@@ -177,7 +177,7 @@ export const STRAVA_CLIENT_ID      = 'votre_strava_client_id';
 export const STRAVA_CLIENT_SECRET  = 'votre_strava_client_secret';
 ```
 
-- **Strava** : flux OAuth2 géré dans l'app. Ajouter `client_id` et `client_secret` depuis [strava.com/settings/api](https://www.strava.com/settings/api). Authorization Callback Domain : `opensportsync`.
+- **Strava** : flux OAuth2 géré dans l'app. Ajouter `client_id` et `client_secret` depuis [strava.com/settings/api](https://www.strava.com/settings/api). **"Domaine de rappel d'autorisation" : `oauth`** (partie host de `opensportsync://oauth/strava`).
 - **Clé API Runalyze** : à saisir dans l'écran Paramètres de l'app. À générer sur [runalyze.com/settings/config/account](https://runalyze.com/settings/config/account).
 - **Livelox** : flux OAuth2 géré dans l'app. Nécessite un `client_id` enregistré auprès de [livelox.com](https://livelox.com).
 
