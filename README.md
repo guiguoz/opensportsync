@@ -17,8 +17,6 @@ You don't need to build the app yourself.
 2. Download the latest `app-debug.apk` file to your Android device
 3. Install it (you may need to allow "Install from unknown sources")
 
-**In-app updates:** The app automatically checks for new GitHub releases on startup and prompts you to update when a new version is available!
-
 ### Features
 
 - Sync activity logs directly from the watch via USB OTG (no Bluetooth required)
@@ -115,8 +113,6 @@ Pas besoin de compiler l'application vous-même.
 1. Allez sur la [page des Releases GitHub](https://github.com/guiguoz/opensportsync/releases/latest)
 2. Téléchargez le dernier fichier `app-debug.apk` sur votre téléphone
 3. Installez-le (il faudra autoriser "l'installation d'applications de sources inconnues")
-
-**Mises à jour in-app :** L'application vérifie automatiquement s'il existe une nouvelle version sur GitHub à chaque lancement et vous propose de la télécharger !
 
 ### Fonctionnalités
 
