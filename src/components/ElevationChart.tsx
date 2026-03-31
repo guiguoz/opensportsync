@@ -6,12 +6,15 @@ import { TrackPoint, ElevationStats } from '../services/GpxParser';
 interface Props {
   points: TrackPoint[];
   stats: ElevationStats;
+  externalProgress?: number; // 0 to 1
+  onScrub?: (progress: number) => void;
+  onScrubEnd?: () => void;
 }
 
 const CHART_HEIGHT = 120;
 const PADDING = { top: 8, bottom: 24, left: 36, right: 8 };
 
-export default function ElevationChart({ points, stats }: Props) {
+export default function ElevationChart({ points, stats, externalProgress, onScrub, onScrubEnd }: Props) {
   const screenWidth = Dimensions.get('window').width;
   const chartW = screenWidth - PADDING.left - PADDING.right;
   const chartH = CHART_HEIGHT - PADDING.top - PADDING.bottom;
@@ -56,18 +59,35 @@ export default function ElevationChart({ points, stats }: Props) {
   const panResponder = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: () => true,
-    onPanResponderMove: (_, gs) => {
-      const x = gs.moveX - PADDING.left;
-      setCursorX(Math.max(0, Math.min(x, chartW)));
+    onPanResponderGrant: (_, gs) => {
+      const x = Math.max(0, Math.min(gs.x0 - PADDING.left, chartW));
+      setCursorX(x);
+      onScrub?.(x / chartW);
     },
-    onPanResponderRelease: () => setCursorX(null),
-    onPanResponderTerminate: () => setCursorX(null),
-  }), [chartW]);
+    onPanResponderMove: (_, gs) => {
+      const x = Math.max(0, Math.min(gs.moveX - PADDING.left, chartW));
+      setCursorX(x);
+      onScrub?.(x / chartW);
+    },
+    onPanResponderRelease: () => {
+      setCursorX(null);
+      onScrubEnd?.();
+    },
+    onPanResponderTerminate: () => {
+      setCursorX(null);
+      onScrubEnd?.();
+    },
+  }), [chartW, onScrub, onScrubEnd]);
 
   // ── Point actif sous le curseur ────────────────────────────────────────────
   const activePoint = useMemo(() => {
-    if (cursorX === null || distances.length === 0) return null;
-    const targetDist = (cursorX / chartW) * totalDist;
+    let effectiveCursorX = cursorX;
+    if (cursorX === null && externalProgress !== undefined) {
+      effectiveCursorX = externalProgress * chartW;
+    }
+
+    if (effectiveCursorX === null || distances.length === 0) return null;
+    const targetDist = (effectiveCursorX / chartW) * totalDist;
     let idx = distances.findIndex(d => d >= targetDist);
     if (idx < 0) idx = distances.length - 1;
     return {

@@ -7,6 +7,8 @@ export interface TrackPoint {
   longitude: number;
   elevation: number;   // mètres
   timestamp: number;   // Unix ms
+  cumDist: number;     // mètres cumulés depuis le départ
+  cumTime: number;     // secondes cumulées depuis le départ
 }
 
 export interface ElevationStats {
@@ -58,14 +60,46 @@ export function parseTrackPoints(gpxXml: string): TrackPoint[] {
 
   const rawPoints = Array.isArray(trkseg.trkpt) ? trkseg.trkpt : [trkseg.trkpt];
 
-  return rawPoints
-    .filter((p: any) => p?.['@_lat'] !== undefined)
-    .map((p: any) => ({
-      latitude: parseFloat(p['@_lat']),
-      longitude: parseFloat(p['@_lon']),
-      elevation: parseFloat(p.ele ?? '0'),
-      timestamp: p.time ? new Date(p.time).getTime() : 0,
-    }));
+  const points: TrackPoint[] = [];
+  let firstTimestamp = 0;
+  let lastValidPoint: TrackPoint | null = null;
+
+  for (const p of rawPoints) {
+    if (p?.['@_lat'] === undefined || p?.['@_lon'] === undefined) continue;
+
+    const latitude = parseFloat(p['@_lat']);
+    const longitude = parseFloat(p['@_lon']);
+    const elevation = parseFloat(p.ele ?? '0');
+    const timestamp = p.time ? new Date(p.time).getTime() : 0;
+
+    if (points.length === 0) {
+      firstTimestamp = timestamp;
+      const pt: TrackPoint = { latitude, longitude, elevation, timestamp, cumDist: 0, cumTime: 0 };
+      points.push(pt);
+      lastValidPoint = pt;
+      continue;
+    }
+
+    if (lastValidPoint) {
+      const dist = haversineM(lastValidPoint.latitude, lastValidPoint.longitude, latitude, longitude);
+      const newCumDist = lastValidPoint.cumDist + dist;
+      let newCumTime = lastValidPoint.cumTime;
+
+      if (timestamp > 0 && firstTimestamp > 0) {
+        newCumTime = (timestamp - firstTimestamp) / 1000;
+        // Filtrage des sauts temporels en arrière ou doublons temporels
+        if (newCumTime <= lastValidPoint.cumTime) {
+          continue; 
+        }
+      }
+
+      const pt: TrackPoint = { latitude, longitude, elevation, timestamp, cumDist: newCumDist, cumTime: newCumTime };
+      points.push(pt);
+      lastValidPoint = pt;
+    }
+  }
+
+  return points;
 }
 
 /** Calcule les statistiques altimétriques et la distance totale. */
@@ -78,7 +112,6 @@ export function computeElevationStats(points: TrackPoint[]): ElevationStats {
   let dMinus = 0;
   let altMin = points[0].elevation;
   let altMax = points[0].elevation;
-  let totalDistance = 0;
 
   for (let i = 1; i < points.length; i++) {
     const prev = points[i - 1];
@@ -91,9 +124,6 @@ export function computeElevationStats(points: TrackPoint[]): ElevationStats {
 
     if (curr.elevation < altMin) altMin = curr.elevation;
     if (curr.elevation > altMax) altMax = curr.elevation;
-
-    // Distance Haversine
-    totalDistance += haversineM(prev.latitude, prev.longitude, curr.latitude, curr.longitude);
   }
 
   return {
@@ -101,7 +131,7 @@ export function computeElevationStats(points: TrackPoint[]): ElevationStats {
     dMinus: Math.round(dMinus),
     altMin: Math.round(altMin),
     altMax: Math.round(altMax),
-    totalDistance: Math.round(totalDistance),
+    totalDistance: Math.round(points[points.length - 1].cumDist),
   };
 }
 

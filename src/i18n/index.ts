@@ -84,8 +84,12 @@ const fr = {
   uploadStrava:   '🟠 Upload Strava',
   distance:       'Distance',
   duration:       'Durée',
+  avgSpeed:       'Vitesse',
+  pace:           'Allure',
   departure:      'Départ',
   arrival:        'Arrivée',
+  replayTime:     'Replay (temps)',
+  replayDist:     'Replay (distance)',
 
   // SettingsScreen — Strava
   stravaSection:         'Strava',
@@ -191,8 +195,12 @@ const en: typeof fr = {
   uploadStrava:   '🟠 Upload to Strava',
   distance:       'Distance',
   duration:       'Duration',
+  avgSpeed:       'Speed',
+  pace:           'Pace',
   departure:      'Start',
   arrival:        'Finish',
+  replayTime:     'Replay (time)',
+  replayDist:     'Replay (distance)',
 
   liveloxSettingsDesc: 'Connect your Livelox account to export your tracks. The connection uses OAuth2 PKCE.',
   liveloxConnectedStatus: 'Livelox account connected',
