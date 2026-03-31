@@ -22,7 +22,7 @@ You don't need to build the app yourself.
 - Sync activity logs directly from the watch via USB OTG (no Bluetooth required)
 - Display GPS tracks on an interactive map (IGN tiles via WebView + Leaflet)
 - Elevation profile with D+ / D- stats, pace (min/km) and average speed (km/h)
-- Interactive GPX replay — relive your activity point by point on the map
+- Interactive GPX replay — relive your activity point by point on the map (play/pause, speed x1/x10/x60/x120, seek)
 - Activity type display (Orienteering, Trail running, MTB, Cycling…)
 - Activity filters by type in the log list
 - Local SQLite database — automatic rebuild from GPX files on device
@@ -120,7 +120,7 @@ Pas besoin de compiler l'application vous-même.
 - Synchronisation des activités directement depuis la montre via USB OTG (sans Bluetooth)
 - Affichage des tracés GPS sur une carte interactive (tuiles IGN via WebView + Leaflet)
 - Profil altimétrique avec statistiques D+ / D-, allure (min/km) et vitesse moyenne (km/h)
-- Replay interactif : revivez votre activité point par point sur la carte
+- Replay interactif : revivez votre activité point par point sur la carte (play/pause, vitesse x1/x10/x60/x120, scrub)
 - Affichage du type d'activité (Orientation, Trail, VTT, Cyclisme…)
 - Filtres par type d'activité dans la liste
 - Base de données SQLite locale — reconstruction automatique depuis les fichiers GPX présents sur l'appareil

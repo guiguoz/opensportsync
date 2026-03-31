@@ -121,8 +121,6 @@ function buildLeafletHtml(): string {
 
         window.Replay.marker = L.marker(lls[0], { icon: playerIcon, zIndexOffset: 1000 }).addTo(map);
       }
-      
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'REPLAY_READY' }));
     },
 
     play: function(speed) {
@@ -315,12 +313,14 @@ export default function MapScreen() {
     webViewRef.current?.injectJavaScript(`window.Replay.seek(${newVal}); true;`);
   };
 
+  const onWebViewLoad = () => {
+    setIsReady(true);
+  };
+
   const onMessage = (event: WebViewMessageEvent) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
-      if (data.type === 'REPLAY_READY') {
-        setIsReady(true);
-      } else if (data.type === 'REPLAY_TICK') {
+      if (data.type === 'REPLAY_TICK') {
         if (!isScrubbingRef.current) {
           setCurrentReplayVal(data.payload.val);
           setCurrentReplayDist(data.payload.dist ?? data.payload.val);
@@ -522,6 +522,7 @@ export default function MapScreen() {
         javaScriptEnabled
         domStorageEnabled={false}
         mixedContentMode="never"
+        onLoad={onWebViewLoad}
         onMessage={onMessage}
       />
 
