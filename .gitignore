@@ -76,7 +76,6 @@ android/build/
 
 # Debug / temp
 *.db
-*.png
 preview.html
 .claude/
 .qodo/

@@ -25,6 +25,7 @@ Application Android personnelle (React Native Bare Workflow) pour connecter une 
 | 11 | Sécurité : Keychain credentials, PKCE S256, WebView hardening | ✅ |
 | 12 | OAuth2 Livelox : connect/disconnect dans Settings, SHA-256 pure JS (Hermes) | ✅ |
 | 13 | Intégration Strava : OAuth2, upload GPX, polling, connect/disconnect Settings | ✅ |
+| 14 | MapScreen : allure, vitesse moyenne, replay interactif du tracé GPX | ✅ |
 
 ---
 
@@ -110,6 +111,8 @@ Application Android personnelle (React Native Bare Workflow) pour connecter une 
 - Liste activités avec date, distance, dénivelé, type (Orientation, Course, VTT…)
 - Carte IGN avec tracé GPX (`<Polyline>`)
 - Profil altimétrique
+- Statistiques avancées : allure (min/km), vitesse moyenne (km/h)
+- Replay interactif : bouton Play pour revivre le tracé point par point sur la carte
 - Reconstruction DB depuis GPX orphelins (si DB effacée)
 
 ### Export / Partage
